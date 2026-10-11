@@ -10,7 +10,7 @@ import DatePicker from "@/components/DatePicker";
 import { cn, formatDateTH } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
-import { LitterFormData } from "../../schemas/litterSchema";
+import { LitterFormData } from "@sowcycle/core";
 
 interface FatteningSectionProps {
   form: UseFormReturn<LitterFormData>;

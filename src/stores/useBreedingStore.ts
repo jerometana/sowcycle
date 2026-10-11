@@ -1,4 +1,4 @@
-import { Breeding } from "@/types/breeding";
+import { Breeding } from "@sowcycle/core";
 import { create } from "zustand";
 
 interface BreedingState {

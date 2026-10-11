@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import DialogComponent from "@/components/DrawerDialog";
 import SowForm from "@/components/Sow/Form";
-import { Sow } from "@/types/sow";
+import { Sow } from "@sowcycle/core";
 import { Pen, PiggyBankIcon } from "lucide-react";
 
 interface SowHeaderProps {

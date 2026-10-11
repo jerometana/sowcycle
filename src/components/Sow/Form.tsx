@@ -2,7 +2,7 @@
 
 import { createSow, deleteSow, updateSow } from "@/services/sow";
 import { useSowStore } from "@/stores/useSowStore";
-import { Sow } from "@/types/sow";
+import { Sow } from "@sowcycle/core";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,12 @@ export default function SowForm({ editingSow, setDialog }: any) {
     sow: Sow,
     values: z.infer<typeof formSchema>
   ) => {
-    let res = await createSow({ ...sow, ...values });
+    let res = await createSow({
+      ...sow,
+      ...values,
+      birth_date: values.birth_date?.toISOString(),
+      add_date: values.add_date?.toISOString(),
+    });
     if (res) {
       addSow(res);
       form.reset();

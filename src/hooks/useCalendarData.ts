@@ -2,9 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { parseISO, differenceInDays } from "date-fns";
 import { getAllBreedings } from "@/services/breeding";
 import { getAllLitters } from "@/services/litter";
-import { Breeding } from "@/types/breeding";
-import { Sow } from "@/types/sow";
-import { Boar } from "@/types/boar";
+import { Breeding, Sow, Boar } from "@sowcycle/core";
 
 export interface FarrowEvent {
   id: number;

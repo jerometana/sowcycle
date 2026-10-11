@@ -1,8 +1,6 @@
-import { Breeding } from "@/types/breeding";
+import { Breeding, Boar, Sow } from "@sowcycle/core";
 import { createClient } from "@/utils/supabase/client";
 import { getCurrentUser } from "./auth";
-import { Boar } from "@/types/boar";
-import { Sow } from "@/types/sow";
 
 const supabase = createClient();
 

@@ -1,4 +1,4 @@
-import { Medicine } from "@/types/medicine";
+import { Medicine } from "@sowcycle/core";
 import { create } from "zustand";
 
 interface MedicineState {

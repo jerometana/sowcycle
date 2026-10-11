@@ -4,10 +4,8 @@ import { useMemo } from "react";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Check, Loader2 } from "lucide-react";
-import { PREGNANCY_DURATION } from "@/lib/constant";
-import { Breeding } from "@/types/breeding";
+import { expectedFarrowDate, Breeding, farrowFormSchema, FarrowFormData } from "@sowcycle/core";
 import { useBreedingOperations } from "@/hooks/useBreedingOperations";
-import { farrowFormSchema, FarrowFormData } from "@/schemas/breedingSchemas";
 import { 
   BreedDateField, 
   ExpectedFarrowDateField, 
@@ -49,13 +47,11 @@ export function FarrowForm({ breeding, setDialog, onSuccess }: FarrowFormProps) 
         },
   });
 
-  const expectedFarrowDate = useMemo(() => {
+  const expectedDate = useMemo(() => {
     const breedDate = form.watch("breed_date");
     if (!breedDate) return undefined;
     
-    const expected = new Date(breedDate);
-    expected.setDate(expected.getDate() + PREGNANCY_DURATION);
-    return expected;
+    return expectedFarrowDate(breedDate);
   }, [form.watch("breed_date")]);
 
   const totalBornPiglets = useMemo(() => {
@@ -100,7 +96,7 @@ export function FarrowForm({ breeding, setDialog, onSuccess }: FarrowFormProps) 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="flex w-full gap-2 p-4 rounded-2xl bg-muted">
           <BreedDateField form={form} />
-          <ExpectedFarrowDateField expectedDate={expectedFarrowDate} />
+          <ExpectedFarrowDateField expectedDate={expectedDate} />
         </div>
 
         {breeding.breed_date && (

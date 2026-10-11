@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { UseFormReturn } from "react-hook-form";
-import { LitterFormData } from "../../schemas/litterSchema";
-import { FATTENING_DURATION } from "@/lib/constant";
+import { LitterFormData, saleableDate } from "@sowcycle/core";
 
 export const useTotalBornPiglets = (form: UseFormReturn<LitterFormData>) => {
   return useMemo(() => {
@@ -18,9 +17,7 @@ export const useTotalBornPiglets = (form: UseFormReturn<LitterFormData>) => {
 export const useCalculatedSaleableDate = (form: UseFormReturn<LitterFormData>) => {
   return useMemo(() => {
     if (form.watch("fattening_at")) {
-      const saleableDate = new Date(form.watch("fattening_at") || "");
-      saleableDate.setDate(saleableDate.getDate() + FATTENING_DURATION);
-      return saleableDate;
+      return saleableDate(new Date(form.watch("fattening_at")!));
     }
   }, [form.watch("fattening_at")]);
 };

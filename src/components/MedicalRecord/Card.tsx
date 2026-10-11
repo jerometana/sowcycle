@@ -2,10 +2,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import DialogComponent from "../DrawerDialog";
 import { Syringe, Activity, ChevronRight, Asterisk } from "lucide-react";
 import { MedicalRecordForm } from "./Form";
-import { MedicalRecord } from "@/types/medicalRecord";
+import { MedicalRecord, Medicine } from "@sowcycle/core";
 import InfoIcon from "../InfoIcon";
 import { formatDateTH } from "@/lib/utils";
-import { Medicine } from "@/types/medicine";
 
 export default function MedicalRecordCard({
   medicalRecord,

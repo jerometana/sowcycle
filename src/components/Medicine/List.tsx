@@ -1,4 +1,4 @@
-import { Medicine } from "@/types/medicine";
+import { Medicine } from "@sowcycle/core";
 import MedicineCard from "../Medicine/Card";
 import { FadeIn } from "@/components/animations/FadeIn";
 

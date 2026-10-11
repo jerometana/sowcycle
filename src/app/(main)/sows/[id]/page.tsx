@@ -11,8 +11,7 @@ import SowHistorySection from "@/components/Sow/SowHistorySection";
 import { LoadingPageSkeleton } from "@/components/Sow/LoadingSkeleton";
 import TopBar from "@/components/TopBar";
 import TabsComponent from "@/components/TabsComponent";
-import { Sow } from "@/types/sow";
-import { Boar } from "@/types/boar";
+import { Sow, Boar } from "@sowcycle/core";
 
 interface SowPageProps {
   params: Promise<{ id: string }>;

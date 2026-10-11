@@ -1,6 +1,6 @@
 "use client";
 
-import { Breeding } from "@/types/breeding";
+import { Breeding, breedingStage, pregnancyCheckDates } from "@sowcycle/core";
 import { Button } from "../ui/button";
 import {
   Check,
@@ -14,7 +14,6 @@ import {
   CircleAlert,
 } from "lucide-react";
 import { cn, formatDateTH } from "@/lib/utils";
-import { addDays } from "date-fns";
 import DialogComponent from "../DrawerDialog";
 import { FarrowForm } from "./Form";
 import { AddToCalendarButton } from "../AddToCalendarButton";
@@ -30,12 +29,11 @@ export default function BreedingDrawer({
   breeding: Breeding;
   index: number;
 }) {
-  const isPregnant = !breeding.actual_farrow_date && !breeding.is_aborted;
+  const isPregnant = breedingStage(breeding) === "pregnant";
   const isCompleted = !!breeding.actual_farrow_date;
 
   const breedDate = new Date(breeding.breed_date);
-  const checkDate21 = addDays(breedDate, 21);
-  const checkDate42 = addDays(breedDate, 42);
+  const [checkDate21, checkDate42] = pregnancyCheckDates(breedDate);
   const today = new Date();
   const isCheck21Passed = today >= checkDate21;
   const isCheck42Passed = today >= checkDate42;

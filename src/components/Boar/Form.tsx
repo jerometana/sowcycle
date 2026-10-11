@@ -2,7 +2,7 @@
 
 import { createBoar, deleteBoar, updateBoar } from "@/services/boar";
 import { useBoarStore } from "@/stores/useBoarStore";
-import { Boar } from "@/types/boar";
+import { Boar } from "@sowcycle/core";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

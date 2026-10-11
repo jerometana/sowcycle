@@ -18,8 +18,7 @@ import { useMedicineStore } from "@/stores/useMedicineStore";
 import { getAllMedicalRecords } from "@/services/medicalRecord";
 import { useMedicalRecordStore } from "@/stores/useMedicalRecordStore";
 import MedicalRecordCard from "@/components/MedicalRecord/Card";
-import { MedicalRecord } from "@/types/medicalRecord";
-import { Medicine } from "@/types/medicine";
+import { MedicalRecord, Medicine, Sow, Boar } from "@sowcycle/core";
 import { ChevronDown, Filter, ListFilter, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import TabsComponent from "@/components/TabsComponent";
@@ -27,8 +26,6 @@ import { MedicineHistoryCard } from "@/components/Medicine/Card";
 import { MedicineLoadingSkeleton } from "@/components/Medicine/LoadingSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FadeIn } from "@/components/animations/FadeIn";
-import { Sow } from "@/types/sow";
-import { Boar } from "@/types/boar";
 
 export default function MedicinesPage() {
   return (

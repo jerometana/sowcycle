@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { LitterFormData } from "../../schemas/litterSchema";
+import { LitterFormData } from "@sowcycle/core";
 
 interface PigletsSectionProps {
   form: UseFormReturn<LitterFormData>;

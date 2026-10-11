@@ -1,4 +1,4 @@
-import { Sow } from "@/types/sow";
+import { Sow } from "@sowcycle/core";
 import { create } from "zustand";
 
 interface SowState {

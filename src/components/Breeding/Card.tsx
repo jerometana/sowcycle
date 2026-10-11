@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Breeding } from "@/types/breeding";
+import { Breeding, breedingStage, pregnancyCheckDates } from "@sowcycle/core";
 import DialogComponent from "../DrawerDialog";
 import { Button } from "../ui/button";
 import {
@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { FarrowForm } from "./Form";
 import { cn, formatDateTH } from "@/lib/utils";
-import { addDays } from "date-fns";
 import BoarDetailsCard from "../Boar/DetailsCard";
 import { AddToCalendarButton } from "../AddToCalendarButton";
 import BreedingDrawer from "./Drawer";
@@ -30,12 +29,11 @@ export default function BreedingCard({
 }) {
   if (!breeding) return null;
 
-  const isPregnant = !breeding.actual_farrow_date && !breeding.is_aborted;
+  const isPregnant = breedingStage(breeding) === "pregnant";
   const isCompleted = !!breeding.actual_farrow_date;
 
   const breedDate = new Date(breeding.breed_date);
-  const checkDate21 = addDays(breedDate, 21);
-  const checkDate42 = addDays(breedDate, 42);
+  const [checkDate21, checkDate42] = pregnancyCheckDates(breedDate);
   const today = new Date();
   const isCheck21Passed = today >= checkDate21;
   const isCheck42Passed = today >= checkDate42;

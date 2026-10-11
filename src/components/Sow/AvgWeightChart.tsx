@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDateTH } from "@/lib/utils";
-import { Litter } from "@/types/litter";
+import { Litter } from "@sowcycle/core";
 import {
   LineChart,
   Line,

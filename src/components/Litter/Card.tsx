@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Litter } from "@/types/litter";
+import { Litter, Sow, litterStage } from "@sowcycle/core";
 import DrawerDialog from "../DrawerDialog";
 import { Button } from "../ui/button";
 import {
@@ -19,7 +19,6 @@ import { LitterForm } from "./Form";
 import LitterDrawer from "./Drawer";
 import { cn, formatDateTH } from "@/lib/utils";
 import { AddToCalendarButton } from "../AddToCalendarButton";
-import { Sow } from "@/types/sow";
 import { useMemo } from "react";
 
 interface ExtendedLitter extends Litter {
@@ -42,9 +41,7 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
 
   if (!litter) return null;
 
-  const isSold = !!litter.sold_at;
-  const isFattening = !!litter.fattening_at && !isSold;
-  const isBorn = !litter.fattening_at; // Just born, not fattening yet
+  const stage = litterStage(litter);
 
   return (
     <DrawerDialog
@@ -59,8 +56,8 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
                   ลูกขุนแม่{litter.sows?.name || "ไม่ระบุ"}
                 </h3>
                 <div className="flex items-center gap-2 text-sm">
-                  {isSold && <span className="text-green-600">ขายแล้ว</span>}
-                  {isFattening && (
+                  {stage === "sold" && <span className="text-green-600">ขายแล้ว</span>}
+                  {stage === "fattening" && (
                     <span className="text-orange-500">กำลังขุน</span>
                   )}
                   <span className="text-muted-foreground">
@@ -96,7 +93,7 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
               </div>
 
               {/* Weight Stats (Only if Sold) */}
-              {isSold && litter.avg_weight && (
+              {stage === "sold" && litter.avg_weight && (
                 <div className="flex items-start gap-4">
                   <div className="flex items-center justify-center w-12 h-12 p-2 bg-muted rounded-2xl text-muted-foreground">
                     <Gauge size={24} />
@@ -115,7 +112,7 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
               {/* Timeline Section */}
               <div className="relative flex flex-col gap-4 p-4 bg-accent rounded-xl">
                 {/* Vertical Line */}
-                {(isFattening || isSold) && (
+                {stage !== "nursing" && (
                   <div className="absolute left-10 top-6 bottom-6 w-[2px] bg-neutral-200 -z-0" />
                 )}
 
@@ -135,7 +132,7 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
                 </div>
 
                 {/* Timeline: Fattening */}
-                {(isFattening || isSold) && (
+                {stage !== "nursing" && (
                   <div className="relative flex items-start gap-4">
                     <div className="flex items-center justify-center w-12 h-12 p-2 bg-white rounded-2xl text-muted-foreground">
                       <Beef size={24} />
@@ -154,12 +151,12 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
                 )}
 
                 {/* Timeline: Sale/Expected Sale */}
-                {(isFattening || isSold) && (
+                {stage !== "nursing" && (
                   <div className="relative flex items-start gap-4">
                     <div
                       className={cn(
                         "flex items-center justify-center w-12 h-12 p-2  rounded-2xl ",
-                        isSold
+                        stage === "sold"
                           ? "bg-white text-muted-foreground"
                           : "bg-muted text-neutral-300"
                       )}
@@ -168,10 +165,10 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
                     </div>
                     <div className="flex flex-col justify-center">
                       <p className="text-muted-foreground text-sm mb-0.5">
-                        {isSold ? "ขายแล้วเมื่อ" : "กำหนดขาย"}
+                        {stage === "sold" ? "ขายแล้วเมื่อ" : "กำหนดขาย"}
                       </p>
                       <span className="font-semibold text-gray-900">
-                        {isSold
+                        {stage === "sold"
                           ? formatDateTH(litter.sold_at!, true, true, false)
                           : formatDateTH(
                               litter.saleable_at!,
@@ -188,10 +185,10 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
           </CardContent>
 
           {/* Footer Actions */}
-          {isSold ? null : (
+          {stage === "sold" ? null : (
             <CardFooter className="flex flex-col gap-2 pt-0">
               {/* Add Fattening Button */}
-              {isBorn && (
+              {stage === "nursing" && (
                 <div onClick={(e) => e.stopPropagation()} className="w-full">
                   <DrawerDialog
                     title="เพิ่มวันเริ่มขุน"
@@ -210,7 +207,7 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
               )}
 
               {/* Record Sale Button */}
-              {isFattening && (
+              {stage === "fattening" && (
                 <div onClick={(e) => e.stopPropagation()} className="w-full">
                   <DrawerDialog
                     title="บันทึกวันขาย"
@@ -226,7 +223,7 @@ export default function LitterCard({ litter, index }: LitterCardProps) {
               )}
 
               {/* Add to Calendar */}
-              {isFattening && litter.saleable_at && (
+              {stage === "fattening" && litter.saleable_at && (
                 <div onClick={(e) => e.stopPropagation()} className="w-full">
                   <AddToCalendarButton
                     title={`กำหนดจับหมูขุน แม่${litter.sows?.name}`}

@@ -6,7 +6,7 @@ import {
   updateMedicine,
 } from "@/services/medicine";
 import { useMedicineStore } from "@/stores/useMedicineStore";
-import { Medicine } from "@/types/medicine";
+import { Medicine } from "@sowcycle/core";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

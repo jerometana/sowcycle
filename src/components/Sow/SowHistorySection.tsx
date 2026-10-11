@@ -6,12 +6,9 @@ import BreedingCard from "@/components/Breeding/Card";
 import MedicalRecordCard from "@/components/MedicalRecord/Card";
 import { NewBreedingForm } from "@/components/Breeding/Form";
 import { MedicalRecordForm } from "@/components/MedicalRecord/Form";
-import { Sow } from "@/types/sow";
-import { Breeding } from "@/types/breeding";
-import { MedicalRecord } from "@/types/medicalRecord";
+import { Sow, Breeding, MedicalRecord, Medicine } from "@sowcycle/core";
 import { Heart, Plus, Syringe } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Medicine } from "@/types/medicine";
 
 interface SowHistorySectionProps {
   sow: Sow;

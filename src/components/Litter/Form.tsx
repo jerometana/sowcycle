@@ -15,9 +15,8 @@ import { Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLitterStore } from "@/stores/useLitterStore";
 import { updateLitter } from "@/services/litter";
-import { Litter } from "@/types/litter";
+import { Litter, litterFormSchema, LitterFormData } from "@sowcycle/core";
 
-import { litterFormSchema, LitterFormData } from "@/schemas/litterSchema";
 import { useTotalBornPiglets, useCalculatedSaleableDate } from "./hooks";
 import { PigletsSection } from "./PigletsSection";
 import { FatteningSection } from "./FatteningSection";
@@ -63,7 +62,6 @@ export function LitterForm({ litter, setDialog, mode = "edit", onSuccess }: Litt
   const handleUpdate = async (litterData: Litter) => {
     const requestBody = {
       ...litterData,
-      boar_id: litterData.boars?.boar_id,
       updated_at: new Date().toISOString(),
       sows: undefined,
       sow: undefined,

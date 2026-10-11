@@ -1,8 +1,6 @@
-import { MedicalRecord } from "@/types/medicalRecord";
+import { MedicalRecord, Sow, Boar } from "@sowcycle/core";
 import { createClient } from "@/utils/supabase/client";
 import { getCurrentUser } from "./auth";
-import { Sow } from "@/types/sow";
-import { Boar } from "@/types/boar";
 
 const supabase = createClient();
 

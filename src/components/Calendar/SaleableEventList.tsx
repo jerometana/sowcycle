@@ -15,7 +15,7 @@ import InfoIcon from "../InfoIcon";
 import { formatDateTH, getDaysRemaining, cn } from "@/lib/utils";
 import DrawerDialog from "@/components/DrawerDialog";
 import { LitterForm } from "@/components/Litter/Form";
-import { Litter } from "@/types/litter";
+import { Litter } from "@sowcycle/core";
 
 interface SaleableEvent {
   id: number;

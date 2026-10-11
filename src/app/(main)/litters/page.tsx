@@ -17,12 +17,11 @@ import LitterCard from "@/components/Litter/Card";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { useLitterData } from "@/hooks/useLitterData";
 import { useLitterFilters } from "@/hooks/useLitterFilters";
-import { Litter } from "@/types/litter";
+import { Litter, Boar } from "@sowcycle/core";
 import { cn } from "@/lib/utils";
 import TopBar from "@/components/TopBar";
 import { StatsCard } from "@/components/StatsCard";
 import { LitterLoadingSkeleton } from "@/components/Litter/LoadingSkeleton";
-import { Boar } from "@/types/boar";
 
 // Types
 interface FilterOption {

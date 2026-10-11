@@ -8,7 +8,7 @@ import {
 } from "@/services/breeding";
 import { createLitter } from "@/services/litter";
 import { patchSow } from "@/services/sow";
-import { Breeding } from "@/types/breeding";
+import { Breeding } from "@sowcycle/core";
 
 interface CreateBreedingData {
   sow_id: number;
@@ -132,7 +132,6 @@ export function useBreedingOperations() {
             piglets_born_count: totalBornPiglets,
             piglets_male_born_alive: breeding.piglets_male_born_alive!,
             piglets_female_born_alive: breeding.piglets_female_born_alive!,
-            boar_id: breeding.boars?.id,
             avg_weight: breeding.avg_weight,
           };
 

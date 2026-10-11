@@ -3,7 +3,7 @@ import { useSowStore } from "@/stores/useSowStore";
 import { useBreedingStore } from "@/stores/useBreedingStore";
 import { useMedicalRecordStore } from "@/stores/useMedicalRecordStore";
 import { getSowByIdWithAllInfo } from "@/services/sow";
-import { Litter } from "@/types/litter";
+import { Litter } from "@sowcycle/core";
 
 export function useSowDetailData(id: number | null) {
   const { sow, setSow } = useSowStore();
@@ -28,7 +28,7 @@ export function useSowDetailData(id: number | null) {
           setSow(sowData);
           setBreedings(sowData.breedings);
           setMedicalRecords(sowData.medical_records);
-          setLitters(sowData.litters);
+          setLitters(sowData.litters ?? []);
         }
       } catch (err) {
         console.error("Error fetching sow data:", err);

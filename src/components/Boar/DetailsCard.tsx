@@ -1,4 +1,4 @@
-import { Boar } from "@/types/boar";
+import { Boar } from "@sowcycle/core";
 import { Pen } from "lucide-react";
 import DialogComponent from "../DrawerDialog";
 import { Button } from "../ui/button";

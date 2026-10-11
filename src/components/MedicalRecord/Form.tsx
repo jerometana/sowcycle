@@ -35,7 +35,7 @@ import { getAllSows } from "@/services/sow";
 import { useSowStore } from "@/stores/useSowStore";
 import { useToast } from "@/hooks/use-toast";
 import DialogComponent from "../DrawerDialog";
-import { MedicalRecord } from "@/types/medicalRecord";
+import { MedicalRecord } from "@sowcycle/core";
 import { Textarea } from "../ui/textarea";
 import { useLoading } from "@/stores/useLoading";
 import { useMedicalRecordStore } from "@/stores/useMedicalRecordStore";
