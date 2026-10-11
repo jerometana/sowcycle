@@ -1,8 +1,9 @@
 import { useQuery, useStatus } from "@powersync/react-native";
 import { breedingStage, type BreedingStage } from "@sowcycle/core";
-import { differenceInCalendarDays, format } from "date-fns";
-import { th } from "date-fns/locale";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { differenceInCalendarDays } from "date-fns";
+import { router } from "expo-router";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { thaiDate } from "../lib/date";
 
 type SowRow = {
   id: string;
@@ -24,7 +25,9 @@ const SOWS_WITH_LATEST_BREEDING = `
   select s.id, s.name, b.breed_date, b.expected_farrow_date, b.actual_farrow_date, b.is_aborted
   from sows s
   left join breedings b on b.id = (
-    select id from breedings where sow_id = s.id order by breed_date desc limit 1
+    select id from breedings where sow_id = s.id
+    order by (actual_farrow_date is null and coalesce(is_aborted, 0) = 0) desc, breed_date desc
+    limit 1
   )
   where coalesce(s.is_active, 1) = 1
   order by s.name`;
@@ -71,18 +74,22 @@ export default function SowList() {
 function SowRowView({ sow }: { sow: SowListItem }) {
   const label = STAGE_LABEL[sow.stage];
   return (
-    <View style={s.row}>
+    <Pressable
+      style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}
+      onPress={() => router.push({ pathname: "/sows/[id]", params: { id: sow.id } })}
+    >
       <View style={{ flex: 1 }}>
         <Text style={s.name}>{sow.name}</Text>
         {sow.farrowDate && <Text style={s.detail}>{farrowDetail(sow.stage, sow.farrowDate)}</Text>}
       </View>
       <Text style={[s.chip, { color: label.color, borderColor: label.color }]}>{label.text}</Text>
-    </View>
+    </Pressable>
   );
 }
 
 const farrowDetail = (stage: SowListItem["stage"], date: Date) => {
-  const formatted = format(date, "d MMM", { locale: th });
+  const formatted = thaiDate(date);
+  if (stage === "aborted") return `แท้งเมื่อ ${formatted}`;
   if (stage !== "pregnant") return `คลอดเมื่อ ${formatted}`;
   const days = differenceInCalendarDays(date, new Date());
   return days >= 0 ? `กำหนดคลอด ${formatted} (อีก ${days} วัน)` : `กำหนดคลอด ${formatted} (เลยมา ${-days} วัน)`;

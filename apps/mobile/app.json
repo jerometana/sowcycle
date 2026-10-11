@@ -21,7 +21,8 @@
       "package": "com.jerometana.sowcycle"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@react-native-community/datetimepicker"
     ],
     "scheme": "sowcycle",
     "experiments": {
