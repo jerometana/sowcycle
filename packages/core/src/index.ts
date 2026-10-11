@@ -7,3 +7,4 @@ export * from "./litterSchema";
 export * from "./medicalRecord";
 export * from "./medicine";
 export * from "./sow";
+export * from "./reminders";

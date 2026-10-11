@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { db } from "../db";
 import { connector } from "../db/connector";
 import { supabase } from "../lib/supabase";
+import { useReminders } from "../notifications/reminders";
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -22,6 +23,8 @@ export default function RootLayout() {
       db.disconnectAndClear();
     }
   }, [session?.user.id]);
+
+  useReminders(session === undefined ? "unknown" : session ? "signedIn" : "signedOut");
 
   if (session === undefined) return null;
 
