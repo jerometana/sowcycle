@@ -171,7 +171,7 @@ export default function BoarForm({ editingBoar, setDialog }: any) {
             >
               <p>
                 คุณแน่ใจหรือไม่ที่จะลบสายพันธุ์{" "}
-                <span className="font-bold">{boar.name}</span>
+                <span className="font-bold">{boar.breed}</span>
               </p>
               <div className="flex justify-end gap-2">
                 <Button

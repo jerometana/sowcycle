@@ -193,7 +193,7 @@ export default function MedicineForm({ editingMedicine, setDialog }: any) {
             >
               <p>
                 คุณแน่ใจหรือไม่ที่จะลบยานี้{" "}
-                <span className="font-bold">{medicine.name}</span>
+                <span className="font-bold">{medicine.title}</span>
               </p>
               <div className="flex justify-end gap-2">
                 <Button
