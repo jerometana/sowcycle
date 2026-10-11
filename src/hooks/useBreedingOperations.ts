@@ -81,7 +81,6 @@ export function useBreedingOperations() {
       const requestBody = {
         ...breeding,
         updated_at: new Date().toISOString(),
-        boar_id: breeding.boars?.id || breeding.boars?.boar_id,
         sows: undefined,
         sow: undefined,
         boars: undefined,
@@ -116,7 +115,6 @@ export function useBreedingOperations() {
     try {
       const requestBody = {
         ...breeding,
-        boar_id: breeding.boars?.id || breeding.boars?.boar_id,
         updated_at: new Date().toISOString(),
         sows: undefined,
         sow: undefined,
