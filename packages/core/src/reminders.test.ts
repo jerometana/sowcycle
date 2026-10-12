@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { reminderSchedule, type ReminderBreeding, type ReminderLitter } from "./reminders";
+import type { EventBreeding as ReminderBreeding, EventLitter as ReminderLitter } from "./events";
+import { reminderSchedule } from "./reminders";
 
 const now = new Date(2026, 9, 11, 12, 0);
 

@@ -3,7 +3,7 @@ import { breedingStage, type BreedingStage } from "@sowcycle/core";
 import { differenceInCalendarDays } from "date-fns";
 import { router } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { thaiDate } from "../lib/date";
+import { thaiDate } from "../../lib/date";
 
 type SowRow = {
   id: string;

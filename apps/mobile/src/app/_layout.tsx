@@ -32,8 +32,12 @@ export default function RootLayout() {
     <PowerSyncContext.Provider value={db}>
       <Stack>
         <Stack.Protected guard={!!session}>
-          <Stack.Screen name="index" options={{ title: "แม่พันธุ์" }} />
-          <Stack.Screen name="sows/[id]/index" options={{ title: "", headerBackTitle: "แม่พันธุ์" }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "แม่พันธุ์" }} />
+          <Stack.Screen
+            name="litters/[id]"
+            options={{ presentation: "formSheet", title: "ครอก", sheetAllowedDetents: [1] }}
+          />
+          <Stack.Screen name="sows/[id]/index" options={{ title: "", headerBackButtonDisplayMode: "minimal" }} />
           <Stack.Screen
             name="sows/[id]/breed"
             options={{ presentation: "formSheet", title: "เพิ่มการผสม", sheetAllowedDetents: [0.6, 1] }}
