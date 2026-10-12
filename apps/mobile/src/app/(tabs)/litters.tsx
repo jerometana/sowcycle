@@ -1,93 +1,120 @@
 import { useQuery } from "@powersync/react-native";
-import { litterStage, type LitterStage } from "@sowcycle/core";
+import { litterStage } from "@sowcycle/core";
 import { differenceInCalendarDays } from "date-fns";
 import { router } from "expo-router";
 import { useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { thaiDate } from "../../lib/date";
-import { LITTER_STAGE_LABEL } from "../../lib/litterLabels";
+import { FlatList, StyleSheet, View } from "react-native";
+import { Button, Card, CardHeader, EmptyText, InfoRow, screen, SearchBar, Segmented } from "../../components/ui";
+import { thaiDateLong } from "../../lib/date";
+import { color, Text } from "../../theme";
+import { Cake, Calendar, Check, PiggyBank, Plus } from "../../theme/icons";
 
 type LitterRow = {
   id: string;
   sow_name: string;
   birth_date: string | null;
   piglets_born_count: number | null;
+  piglets_male_born_alive: number | null;
+  piglets_female_born_alive: number | null;
+  avg_weight: number | null;
   fattening_at: string | null;
   saleable_at: string | null;
   sold_at: string | null;
 };
 
 const LITTERS = `
-  select l.id, s.name as sow_name, l.birth_date, l.piglets_born_count, l.fattening_at, l.saleable_at, l.sold_at
+  select l.*, s.name as sow_name
   from litters l join sows s on s.id = l.sow_id
   order by l.birth_date desc`;
 
-const detailOf = (l: LitterRow, stage: LitterStage) => {
-  const today = new Date();
-  if (stage === "sold" && l.sold_at) return `ขายเมื่อ ${thaiDate(l.sold_at, true)}`;
-  if (stage === "fattening" && l.saleable_at) {
-    const days = differenceInCalendarDays(new Date(l.saleable_at), today);
-    return `กำหนดขาย ${thaiDate(l.saleable_at, true)} (${days >= 0 ? `อีก ${days} วัน` : `เลยมา ${-days} วัน`})`;
-  }
-  if (l.birth_date) return `อายุ ${differenceInCalendarDays(today, new Date(l.birth_date))} วัน`;
-  return "";
-};
+type Filter = "unsold" | "sold";
 
 export default function Litters() {
-  const [showSold, setShowSold] = useState(false);
+  const [filter, setFilter] = useState<Filter>("unsold");
+  const [query, setQuery] = useState("");
   const { data } = useQuery<LitterRow>(LITTERS);
-  const litters = data.filter((l) => (litterStage(l) === "sold") === showSold);
+  const q = query.trim().toLowerCase();
+  const litters = data
+    .filter((l) => (litterStage(l) === "sold") === (filter === "sold"))
+    .filter((l) => !q || l.sow_name.toLowerCase().includes(q));
 
   return (
     <FlatList
       contentInsetAdjustmentBehavior="automatic"
-      style={s.root}
+      style={screen.root}
+      contentContainerStyle={screen.content}
       data={litters}
       keyExtractor={(l) => l.id}
+      keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
-        <View style={s.segment}>
-          {[false, true].map((sold) => (
-            <Pressable key={String(sold)} onPress={() => setShowSold(sold)} style={[s.segItem, showSold === sold && s.segActive]}>
-              <Text style={[s.segText, showSold === sold && s.segTextActive]}>{sold ? "ขายแล้ว" : "ยังไม่ขาย"}</Text>
-            </Pressable>
-          ))}
+        <View style={{ gap: 12 }}>
+          <SearchBar value={query} onChange={setQuery} placeholder="ค้นหาด้วยชื่อแม่พันธุ์" />
+          <Segmented
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "unsold", label: "ยังไม่ขาย" },
+              { value: "sold", label: "ขายแล้ว" },
+            ]}
+          />
         </View>
       }
-      ListEmptyComponent={<Text style={s.empty}>ไม่มีครอก</Text>}
-      renderItem={({ item }) => {
-        const stage = litterStage(item);
-        const label = LITTER_STAGE_LABEL[stage];
-        return (
-          <Pressable
-            style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}
-            onPress={() => router.push({ pathname: "/litters/[id]", params: { id: item.id } })}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={s.name}>แม่ {item.sow_name}</Text>
-              <Text style={s.detail}>
-                {item.birth_date ? `คลอด ${thaiDate(item.birth_date, true)} · ` : ""}
-                {item.piglets_born_count ?? 0} ตัว
-              </Text>
-              <Text style={s.detail}>{detailOf(item, stage)}</Text>
-            </View>
-            <Text style={[s.chip, { color: label.color, borderColor: label.color }]}>{label.text}</Text>
-          </Pressable>
-        );
-      }}
+      ListEmptyComponent={<EmptyText>ไม่มีครอก</EmptyText>}
+      renderItem={({ item }) => <LitterCard litter={item} />}
     />
   );
 }
 
+function LitterCard({ litter: l }: { litter: LitterRow }) {
+  const stage = litterStage(l);
+  const open = () => router.push({ pathname: "/litters/[id]", params: { id: l.id } });
+  const age = l.birth_date ? differenceInCalendarDays(l.sold_at ? new Date(l.sold_at) : new Date(), new Date(l.birth_date)) : null;
+  const saleDays = l.saleable_at ? differenceInCalendarDays(new Date(l.saleable_at), new Date()) : null;
+  return (
+    <Card>
+      <Card onPress={open} style={s.flush}>
+        <CardHeader
+          title={`ลูกขุนแม่${l.sow_name}`}
+          tone={stage === "sold" ? "default" : stage === "fattening" ? "primary" : "default"}
+          subtitle={
+            <Text style={s.muted}>
+              {stage === "sold" ? "ขายแล้ว · " : stage === "fattening" ? "กำลังขุน · " : ""}
+              {age !== null ? `อายุ ${age} วัน` : ""}
+            </Text>
+          }
+        />
+        <InfoRow icon={PiggyBank} label="จำนวน">
+          <View style={s.row}>
+            <Text style={s.value}>{`${l.piglets_born_count ?? 0} ตัว`}</Text>
+            <Text style={[s.chip, { backgroundColor: color.blue }]}>{`ผู้ ${l.piglets_male_born_alive ?? 0}`}</Text>
+            <Text style={[s.chip, { backgroundColor: color.primary }]}>{`เมีย ${l.piglets_female_born_alive ?? 0}`}</Text>
+          </View>
+        </InfoRow>
+        {l.birth_date && <InfoRow icon={Cake} label="คลอดเมื่อ">{thaiDateLong(l.birth_date)}</InfoRow>}
+        {stage !== "nursing" && (
+          <InfoRow icon={Calendar} label={stage === "sold" ? "ขายแล้วเมื่อ" : "กำหนดขาย"} tint={stage === "fattening" ? color.orange : color.mutedForeground}>
+            <Text style={s.value}>
+              {stage === "sold" ? thaiDateLong(l.sold_at!) : l.saleable_at ? thaiDateLong(l.saleable_at) : "-"}
+              {stage === "fattening" && saleDays !== null && (
+                <Text style={saleDays >= 0 ? s.soon : s.late}>{saleDays >= 0 ? `  อีก ${saleDays} วัน` : `  เลยมา ${-saleDays} วัน`}</Text>
+              )}
+            </Text>
+          </InfoRow>
+        )}
+        {stage === "sold" && (l.avg_weight ?? 0) > 0 && <InfoRow icon={PiggyBank} label="น้ำหนักขายเฉลี่ย">{`${l.avg_weight} kg`}</InfoRow>}
+      </Card>
+      {stage === "nursing" && <Button title="เพิ่มวันเริ่มขุน" icon={Plus} variant="secondary" onPress={open} />}
+      {stage === "fattening" && <Button title="บันทึกวันขาย" icon={Check} onPress={open} />}
+    </Card>
+  );
+}
+
 const s = StyleSheet.create({
-  root: { backgroundColor: "#f5f5f4" },
-  segment: { flexDirection: "row", margin: 16, marginBottom: 4, backgroundColor: "#e7e5e4", borderRadius: 12, padding: 3 },
-  segItem: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center" },
-  segActive: { backgroundColor: "#fff" },
-  segText: { color: "#57534e" },
-  segTextActive: { color: "#000", fontWeight: "600" },
-  empty: { textAlign: "center", color: "#737373", marginTop: 48 },
-  row: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginTop: 12, padding: 16, borderRadius: 16 },
-  name: { fontSize: 18, fontWeight: "600" },
-  detail: { color: "#525252", marginTop: 4 },
-  chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, overflow: "hidden" },
+  flush: { padding: 0, borderRadius: 0 },
+  row: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  value: { fontSize: 16, fontWeight: "600", color: color.gray900 },
+  muted: { fontSize: 14, color: color.mutedForeground, marginTop: 2 },
+  chip: { color: color.primaryForeground, fontSize: 12, paddingHorizontal: 8, paddingVertical: 1, borderRadius: 999, overflow: "hidden" },
+  soon: { fontSize: 14, fontWeight: "500", color: color.orange },
+  late: { fontSize: 14, fontWeight: "500", color: color.destructive },
 });

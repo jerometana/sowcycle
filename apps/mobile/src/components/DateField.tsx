@@ -1,6 +1,7 @@
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { thaiDate } from "../lib/date";
+import { Text } from "../theme";
 
 export function DateField(props: { label: string; value: Date; onChange: (date: Date) => void }) {
   return (

@@ -1,4 +1,5 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../theme";
 
 export function NumberField(props: { label: string; value: string; onChange: (v: string) => void; decimal?: boolean }) {
   return (

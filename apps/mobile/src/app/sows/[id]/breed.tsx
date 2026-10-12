@@ -3,12 +3,13 @@ import { expectedFarrowDate, newBreedingFormSchema } from "@sowcycle/core";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { DateField } from "../../../components/DateField";
 import { SubmitButton } from "../../../components/Form";
 import { recordBreeding, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { thaiDate } from "../../../lib/date";
+import { Text } from "../../../theme";
 
 export default function BreedSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();

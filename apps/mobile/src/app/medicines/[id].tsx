@@ -1,18 +1,18 @@
 import { useQuery } from "@powersync/react-native";
 import * as Haptics from "expo-haptics";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
 import { NumberField, SubmitButton } from "../../components/Form";
 import { createMedicine, deleteMedicine, saveErrorMessage, updateMedicine } from "../../db/mutations";
 import { useOnline } from "../../db/useOnline";
+import { Text, TextInput } from "../../theme";
 
 type MedicineDetail = { title: string; description: string | null; stock_count: number | null; uses: number };
 
 export default function MedicineSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isNew = id === "new";
-  const online = useOnline();
   const { data } = useQuery<MedicineDetail>(
     `select m.title, m.description, m.stock_count,
        (select count(*) from medical_records r where r.medicine_id = m.id) as uses
@@ -20,19 +20,19 @@ export default function MedicineSheet() {
     [id]
   );
   const medicine = data[0];
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [stock, setStock] = useState("");
+  if (!isNew && !medicine) return null;
+  return <MedicineForm key={id} id={id} isNew={isNew} medicine={medicine} />;
+}
+
+// Form state starts from the saved row once; later syncs must not overwrite what the farmer is typing.
+function MedicineForm({ id, isNew, medicine }: { id: string; isNew: boolean; medicine: MedicineDetail | undefined }) {
+  const online = useOnline();
+  const [title, setTitle] = useState(medicine?.title ?? "");
+  const [description, setDescription] = useState(medicine?.description ?? "");
+  const [stock, setStock] = useState(String(medicine?.stock_count ?? 0));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (medicine) {
-      setTitle(medicine.title);
-      setDescription(medicine.description ?? "");
-      setStock(String(medicine.stock_count ?? 0));
-    }
-  }, [medicine?.title, medicine?.description, medicine?.stock_count]);
 
   const run = async (write: () => Promise<void>, retrySafe = true) => {
     setBusy(true);

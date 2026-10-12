@@ -1,18 +1,18 @@
 import { useQuery } from "@powersync/react-native";
 import * as Haptics from "expo-haptics";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
 import { SubmitButton } from "../../components/Form";
 import { createBoar, deleteBoar, saveErrorMessage, updateBoar } from "../../db/mutations";
 import { useOnline } from "../../db/useOnline";
+import { Text, TextInput } from "../../theme";
 
 type BoarDetail = { breed: string; description: string | null; breedings: number; litters: number };
 
 export default function BoarSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isNew = id === "new";
-  const online = useOnline();
   const { data } = useQuery<BoarDetail>(
     `select bo.breed, bo.description,
        (select count(*) from breedings b where b.boar_id = bo.id) as breedings,
@@ -21,17 +21,18 @@ export default function BoarSheet() {
     [id]
   );
   const boar = data[0];
-  const [breed, setBreed] = useState("");
-  const [description, setDescription] = useState("");
+  if (!isNew && !boar) return null;
+  return <BoarForm key={id} id={id} isNew={isNew} boar={boar} />;
+}
+
+// Form state starts from the saved row once; later syncs must not overwrite what the farmer is typing.
+function BoarForm({ id, isNew, boar }: { id: string; isNew: boolean; boar: BoarDetail | undefined }) {
+  const online = useOnline();
+  const [breed, setBreed] = useState(boar?.breed ?? "");
+  const [description, setDescription] = useState(boar?.description ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (boar) {
-      setBreed(boar.breed);
-      setDescription(boar.description ?? "");
-    }
-  }, [boar?.breed, boar?.description]);
 
   const run = async (write: () => Promise<void>, retrySafe = true) => {
     setBusy(true);
