@@ -35,6 +35,7 @@ const loadSchedule = async () => {
 // Bumped on sign-out so a sync already in flight cannot schedule the previous user's reminders.
 let generation = 0;
 let running: Promise<void> | null = null;
+let runningGeneration = -1;
 let rerun = false;
 
 const syncOnce = async (gen: number) => {
@@ -65,10 +66,14 @@ const syncOnce = async (gen: number) => {
 // One sync at a time: a change during a sync triggers one more pass instead of a racing second run.
 export const syncReminders = (): Promise<void> => {
   if (running) {
-    rerun = true;
-    return running;
+    if (runningGeneration === generation) {
+      rerun = true;
+      return running;
+    }
+    return running.then(syncReminders);
   }
   const gen = generation;
+  runningGeneration = gen;
   running = (async () => {
     do {
       rerun = false;
