@@ -4,3 +4,6 @@ export const thaiDate = (date: Date | string, withYear = false) =>
     month: "short",
     year: withYear ? "numeric" : undefined,
   });
+
+export const thaiMonthYear = (date: Date | string) =>
+  new Date(date).toLocaleDateString("th-TH", { month: "short", year: "2-digit" });

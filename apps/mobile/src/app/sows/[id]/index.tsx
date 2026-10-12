@@ -1,10 +1,11 @@
 import { useQuery } from "@powersync/react-native";
-import { breedingStage, pregnancyCheckDates, type BreedingStage } from "@sowcycle/core";
+import { breedingStage, countsTowardLitterStats, pregnancyCheckDates, type BreedingStage } from "@sowcycle/core";
 import { differenceInCalendarDays } from "date-fns";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useOnline } from "../../../db/useOnline";
-import { thaiDate } from "../../../lib/date";
+import { ColumnChart, type ChartPoint } from "../../../components/ColumnChart";
+import { thaiDate, thaiMonthYear } from "../../../lib/date";
 
 type BreedingRow = {
   id: string;
@@ -15,6 +16,7 @@ type BreedingRow = {
   piglets_male_born_alive: number | null;
   piglets_female_born_alive: number | null;
   piglets_born_dead: number | null;
+  piglets_born_count: number | null;
   boar_breed: string | null;
 };
 
@@ -28,11 +30,33 @@ const stageOf = (b: BreedingRow): BreedingStage =>
 
 const thDate = (iso: string | Date) => thaiDate(iso, true);
 
+const pigletPoints = (breedings: BreedingRow[]): ChartPoint[] =>
+  breedings
+    .filter((b) =>
+      countsTowardLitterStats({
+        actual_farrow_date: b.actual_farrow_date ?? undefined,
+        is_aborted: b.is_aborted === 1,
+        piglets_born_count: b.piglets_born_count,
+      })
+    )
+    .sort((a, b) => a.actual_farrow_date!.localeCompare(b.actual_farrow_date!))
+    .map((b) => ({ key: b.id, label: thaiMonthYear(b.actual_farrow_date!), value: b.piglets_born_count ?? 0 }));
+
+type SoldLitterRow = { id: string; sold_at: string | null; avg_weight: number | null };
+
+// avg_weight holds the birth weight until a sale overwrites it, so only sold litters carry a sale weight.
+const saleWeightPoints = (litters: SoldLitterRow[]): ChartPoint[] =>
+  litters
+    .filter((l) => l.sold_at && (l.avg_weight ?? 0) > 0)
+    .sort((a, b) => a.sold_at!.localeCompare(b.sold_at!))
+    .map((l) => ({ key: l.id, label: thaiMonthYear(l.sold_at!), value: l.avg_weight! }));
+
 export default function SowDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const online = useOnline();
   const { data: sows } = useQuery<{ name: string }>("select name from sows where id = ?", [id]);
   const { data: breedings } = useQuery<BreedingRow>(BREEDINGS, [id]);
+  const { data: litters } = useQuery<SoldLitterRow>("select id, sold_at, avg_weight from litters where sow_id = ?", [id]);
   const openPregnancy = breedings.find((b) => stageOf(b) === "pregnant");
 
   return (
@@ -50,6 +74,9 @@ export default function SowDetail() {
           <Text style={s.actionText}>{openPregnancy ? "บันทึกการคลอด" : "เพิ่มการผสม"}</Text>
         </Pressable>
         {!online && <Text style={s.offline}>ออฟไลน์ ดูข้อมูลได้ แต่ต้องมีสัญญาณเพื่อบันทึก</Text>}
+
+        <ColumnChart title="จำนวนลูกมีชีวิตต่อครอก" unit="ตัว" points={pigletPoints(breedings)} />
+        <ColumnChart title="น้ำหนักขายเฉลี่ยต่อครอก (กก.)" unit="กก." points={saleWeightPoints(litters)} />
 
         <Text style={s.section}>ประวัติการผสม</Text>
         {breedings.length === 0 && <Text style={s.empty}>ยังไม่มีประวัติการผสม</Text>}
