@@ -21,6 +21,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="boars"
+        options={{
+          title: "พ่อพันธุ์",
+          tabBarIcon: ({ color, size }) => <Ionicons name="male" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="calendar"
         options={{
           title: "ปฏิทิน",
