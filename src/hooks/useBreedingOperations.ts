@@ -132,6 +132,7 @@ export function useBreedingOperations() {
             piglets_born_count: totalBornPiglets,
             piglets_male_born_alive: breeding.piglets_male_born_alive!,
             piglets_female_born_alive: breeding.piglets_female_born_alive!,
+            boar_id: breeding.boars?.id,
             avg_weight: breeding.avg_weight,
           };
 
