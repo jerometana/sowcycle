@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Breeding, Litter, countsTowardLitterStats } from "@sowcycle/core";
+import { getSoldLitters } from "@/lib/utils";
 
 export function useSowDetailCalculations(breedings: Breeding[], litters: Litter[]) {
   const averagePigletsBornCount = useMemo(() => {
@@ -17,13 +18,13 @@ export function useSowDetailCalculations(breedings: Breeding[], litters: Litter[
   }, [breedings]);
 
   const averageWeightChart = useMemo(() => {
-    const validLitters = litters.filter((litter) => litter.avg_weight && litter.avg_weight > 0);
+    const soldLitters = getSoldLitters(litters);
     
-    if (validLitters.length === 0) return 0;
+    if (soldLitters.length === 0) return 0;
     
-    const total = validLitters.reduce((acc, litter) => acc + (litter.avg_weight || 0), 0);
+    const total = soldLitters.reduce((acc, litter) => acc + litter.avg_weight, 0);
     
-    return Math.floor(total / validLitters.length);
+    return Math.floor(total / soldLitters.length);
   }, [litters]);
 
   return {

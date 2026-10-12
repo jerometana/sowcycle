@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateTH } from "@/lib/utils";
+import { formatDateTH, getSoldLitters } from "@/lib/utils";
 import { Litter } from "@sowcycle/core";
 import {
   LineChart,
@@ -18,19 +18,11 @@ interface PigletCountChartProps {
 }
 
 export default function AvgWeightChart({ litters }: PigletCountChartProps) {
-  // Prepare data for the chart
-  const chartData = litters
-    .filter((litter) => litter.avg_weight! > 0)
-    .sort((a, b) => {
-      return (
-        new Date(a.birth_date!).getTime() - new Date(b.birth_date!).getTime()
-      );
-    })
-    .map((litter, index) => ({
-      litter: `ครอกที่ ${index + 1}`,
-      avg_weight: litter.avg_weight || 0,
-      date: formatDateTH(litter.birth_date!),
-    }));
+  const chartData = getSoldLitters(litters).map((litter, index) => ({
+    litter: `ครอกที่ ${index + 1}`,
+    avg_weight: litter.avg_weight,
+    date: formatDateTH(litter.sold_at),
+  }));
 
   if (chartData.length === 0) {
     return;
