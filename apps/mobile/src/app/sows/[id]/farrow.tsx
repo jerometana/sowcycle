@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { DateField } from "../../../components/DateField";
 import { NumberField, SubmitButton } from "../../../components/Form";
-import { recordFarrow, SaveTimeoutError } from "../../../db/mutations";
+import { recordFarrow, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 
 export default function FarrowSheet() {
@@ -49,9 +49,7 @@ export default function FarrowSheet() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch (e) {
-      setError(
-        e instanceof SaveTimeoutError ? "สัญญาณไม่พอ กดบันทึกอีกครั้งได้ ข้อมูลจะไม่ซ้ำ" : "บันทึกไม่สำเร็จ ลองอีกครั้ง"
-      );
+      setError(saveErrorMessage(e));
       setBusy(false);
     }
   };

@@ -51,3 +51,12 @@ export const recordFarrow = (input: FarrowInput) =>
     p_avg_weight: input.isAborted ? null : input.avgWeight,
     p_is_aborted: input.isAborted,
   });
+
+const isConflict = (e: unknown): e is { message: string } =>
+  typeof e === "object" && e !== null && (e as { code?: string }).code === "SC409";
+
+export const saveErrorMessage = (e: unknown) => {
+  if (e instanceof SaveTimeoutError) return "สัญญาณไม่พอ กดบันทึกอีกครั้งได้ ข้อมูลจะไม่ซ้ำ";
+  if (isConflict(e)) return e.message;
+  return "บันทึกไม่สำเร็จ ลองอีกครั้ง";
+};
