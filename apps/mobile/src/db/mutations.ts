@@ -87,8 +87,25 @@ export const recordSale = (litterId: string, soldAt: Date, avgWeight: number | n
 const isConflict = (e: unknown): e is { message: string } =>
   typeof e === "object" && e !== null && (e as { code?: string }).code === "SC409";
 
-export const saveErrorMessage = (e: unknown) => {
-  if (e instanceof SaveTimeoutError) return "สัญญาณไม่พอ กดบันทึกอีกครั้งได้ ข้อมูลจะไม่ซ้ำ";
+// Only idempotent writes (the RPCs and updates by id) can promise that a retry will not duplicate.
+export const saveErrorMessage = (e: unknown, retrySafe = true) => {
+  if (e instanceof SaveTimeoutError) {
+    return retrySafe
+      ? "สัญญาณไม่พอ กดบันทึกอีกครั้งได้ ข้อมูลจะไม่ซ้ำ"
+      : "สัญญาณไม่พอ ตรวจดูรายการก่อนกดบันทึกอีกครั้ง อาจบันทึกไปแล้ว";
+  }
   if (isConflict(e)) return e.message;
   return "บันทึกไม่สำเร็จ ลองอีกครั้ง";
 };
+
+export type BoarInput = { breed: string; description: string };
+
+export const createBoar = async (input: BoarInput) => {
+  const { data } = await supabase.auth.getSession();
+  return runWrite(supabase.from("boars").insert({ ...input, user_id: data.session?.user.id }));
+};
+
+export const updateBoar = (id: string, input: BoarInput) =>
+  runWrite(supabase.from("boars").update({ ...input, updated_at: new Date().toISOString() }).eq("id", Number(id)));
+
+export const deleteBoar = (id: string) => runWrite(supabase.from("boars").delete().eq("id", Number(id)));
