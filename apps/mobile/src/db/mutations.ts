@@ -1,4 +1,4 @@
-import { expectedFarrowDate } from "@sowcycle/core";
+import { expectedFarrowDate, saleableDate } from "@sowcycle/core";
 import { supabase } from "../lib/supabase";
 
 export type BreedingInput = {
@@ -21,11 +21,15 @@ export class SaveTimeoutError extends Error {}
 
 const SAVE_TIMEOUT_MS = 15_000;
 
-const callRpc = async (fn: string, args: Record<string, unknown>) => {
+type AbortableQuery = {
+  abortSignal: (signal: AbortSignal) => PromiseLike<{ error: unknown }>;
+};
+
+const runWrite = async (query: AbortableQuery) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SAVE_TIMEOUT_MS);
   try {
-    const { error } = await supabase.rpc(fn, args).abortSignal(controller.signal);
+    const { error } = await query.abortSignal(controller.signal);
     if (controller.signal.aborted) throw new SaveTimeoutError();
     if (error) throw error;
   } finally {
@@ -34,23 +38,51 @@ const callRpc = async (fn: string, args: Record<string, unknown>) => {
 };
 
 export const recordBreeding = (input: BreedingInput) =>
-  callRpc("record_breeding", {
-    p_sow_id: Number(input.sowId),
-    p_boar_id: input.boarId === null ? null : Number(input.boarId),
-    p_breed_date: input.breedDate.toISOString(),
-    p_expected_farrow_date: expectedFarrowDate(input.breedDate).toISOString(),
-  });
+  runWrite(
+    supabase.rpc("record_breeding", {
+      p_sow_id: Number(input.sowId),
+      p_boar_id: input.boarId === null ? null : Number(input.boarId),
+      p_breed_date: input.breedDate.toISOString(),
+      p_expected_farrow_date: expectedFarrowDate(input.breedDate).toISOString(),
+    })
+  );
 
 export const recordFarrow = (input: FarrowInput) =>
-  callRpc("record_farrow", {
-    p_breeding_id: Number(input.breedingId),
-    p_farrow_date: input.farrowDate.toISOString(),
-    p_male_born_alive: input.isAborted ? 0 : input.maleBornAlive,
-    p_female_born_alive: input.isAborted ? 0 : input.femaleBornAlive,
-    p_born_dead: input.isAborted ? 0 : input.bornDead,
-    p_avg_weight: input.isAborted ? null : input.avgWeight,
-    p_is_aborted: input.isAborted,
-  });
+  runWrite(
+    supabase.rpc("record_farrow", {
+      p_breeding_id: Number(input.breedingId),
+      p_farrow_date: input.farrowDate.toISOString(),
+      p_male_born_alive: input.isAborted ? 0 : input.maleBornAlive,
+      p_female_born_alive: input.isAborted ? 0 : input.femaleBornAlive,
+      p_born_dead: input.isAborted ? 0 : input.bornDead,
+      p_avg_weight: input.isAborted ? null : input.avgWeight,
+      p_is_aborted: input.isAborted,
+    })
+  );
+
+export const startFattening = (litterId: string, fatteningAt: Date) =>
+  runWrite(
+    supabase
+      .from("litters")
+      .update({
+        fattening_at: fatteningAt.toISOString(),
+        saleable_at: saleableDate(fatteningAt).toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", Number(litterId))
+  );
+
+export const recordSale = (litterId: string, soldAt: Date, avgWeight: number | null) =>
+  runWrite(
+    supabase
+      .from("litters")
+      .update({
+        sold_at: soldAt.toISOString(),
+        ...(avgWeight === null ? {} : { avg_weight: avgWeight }),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", Number(litterId))
+  );
 
 const isConflict = (e: unknown): e is { message: string } =>
   typeof e === "object" && e !== null && (e as { code?: string }).code === "SC409";

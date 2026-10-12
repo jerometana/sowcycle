@@ -1,8 +1,9 @@
-import { reminderSchedule, type Reminder, type ReminderBreeding, type ReminderLitter } from "@sowcycle/core";
+import { reminderSchedule, type Reminder } from "@sowcycle/core";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import { db } from "../db";
+import { loadEventInputs } from "../db/cycleEvents";
 
 // iOS keeps at most 64 pending local notifications per app.
 const MAX_SCHEDULED = 60;
@@ -19,17 +20,8 @@ Notifications.setNotificationHandler({
 const identifierOf = (r: Reminder) => `${r.key}@${r.fireAt.toISOString()}`;
 
 const loadSchedule = async () => {
-  const breedings = await db.getAll<Omit<ReminderBreeding, "is_aborted"> & { is_aborted: number | null }>(`
-    select b.id, b.sow_id, s.name as sow_name, b.breed_date, b.expected_farrow_date, b.actual_farrow_date, b.is_aborted
-    from breedings b join sows s on s.id = b.sow_id`);
-  const litters = await db.getAll<ReminderLitter>(`
-    select l.id, l.sow_id, s.name as sow_name, l.fattening_at, l.saleable_at, l.sold_at
-    from litters l join sows s on s.id = l.sow_id`);
-  return reminderSchedule(
-    breedings.map((b) => ({ ...b, is_aborted: b.is_aborted === 1 })),
-    litters,
-    new Date()
-  ).slice(0, MAX_SCHEDULED);
+  const { breedings, litters } = await loadEventInputs();
+  return reminderSchedule(breedings, litters, new Date()).slice(0, MAX_SCHEDULED);
 };
 
 // Bumped on sign-out so a sync already in flight cannot schedule the previous user's reminders.

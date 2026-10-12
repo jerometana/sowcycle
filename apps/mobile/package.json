@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@azure/core-asynciterator-polyfill": "^1.0.2",
+    "@expo/vector-icons": "^15.0.2",
     "@op-engineering/op-sqlite": "^18.2.5",
     "@powersync/common": "^2.3.1",
     "@powersync/react-native": "^2.3.1",

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { reminderSchedule, type ReminderBreeding, type ReminderLitter } from "./reminders";
+import type { EventBreeding as ReminderBreeding, EventLitter as ReminderLitter } from "./events";
+import { reminderSchedule } from "./reminders";
 
 const now = new Date(2026, 9, 11, 12, 0);
 
@@ -70,5 +71,15 @@ describe("reminderSchedule", () => {
     const times = rs.map((r) => r.fireAt.getTime());
     expect(times).toEqual([...times].sort((a, b) => a - b));
     expect(rs.at(-1)?.key).toBe("litter:9:saleable");
+  });
+});
+
+describe("reminderSchedule ordering", () => {
+  it("breaks ties at the same fire time by key, so the 60 kept on iOS are stable", () => {
+    const twin = (id: string): ReminderBreeding => ({ ...pregnant, id, sow_id: id, sow_name: `Sow ${id}` });
+    const forward = reminderSchedule([twin("2"), twin("1")], [], now).map((r) => r.key);
+    const backward = reminderSchedule([twin("1"), twin("2")], [], now).map((r) => r.key);
+    expect(forward).toEqual(backward);
+    expect(forward.slice(0, 2)).toEqual(["breeding:1:check21", "breeding:2:check21"]);
   });
 });
