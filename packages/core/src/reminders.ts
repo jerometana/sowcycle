@@ -69,4 +69,4 @@ export const reminderSchedule = (
   cycleEvents(breedings, litters)
     .flatMap(remindersFor)
     .filter((r) => r.fireAt > now)
-    .sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
+    .sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime() || a.key.localeCompare(b.key));

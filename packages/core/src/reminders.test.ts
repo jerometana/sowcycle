@@ -73,3 +73,13 @@ describe("reminderSchedule", () => {
     expect(rs.at(-1)?.key).toBe("litter:9:saleable");
   });
 });
+
+describe("reminderSchedule ordering", () => {
+  it("breaks ties at the same fire time by key, so the 60 kept on iOS are stable", () => {
+    const twin = (id: string): ReminderBreeding => ({ ...pregnant, id, sow_id: id, sow_name: `Sow ${id}` });
+    const forward = reminderSchedule([twin("2"), twin("1")], [], now).map((r) => r.key);
+    const backward = reminderSchedule([twin("1"), twin("2")], [], now).map((r) => r.key);
+    expect(forward).toEqual(backward);
+    expect(forward.slice(0, 2)).toEqual(["breeding:1:check21", "breeding:2:check21"]);
+  });
+});

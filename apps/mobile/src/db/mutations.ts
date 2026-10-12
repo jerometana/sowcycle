@@ -76,7 +76,11 @@ export const recordSale = (litterId: string, soldAt: Date, avgWeight: number | n
   runWrite(
     supabase
       .from("litters")
-      .update({ sold_at: soldAt.toISOString(), avg_weight: avgWeight, updated_at: new Date().toISOString() })
+      .update({
+        sold_at: soldAt.toISOString(),
+        ...(avgWeight === null ? {} : { avg_weight: avgWeight }),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", Number(litterId))
   );
 
