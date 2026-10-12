@@ -1,7 +1,7 @@
 import { reminderSchedule, type Reminder, type ReminderBreeding, type ReminderLitter } from "@sowcycle/core";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { db } from "../db";
 
 // iOS keeps at most 64 pending local notifications per app.
@@ -32,16 +32,23 @@ const loadSchedule = async () => {
   ).slice(0, MAX_SCHEDULED);
 };
 
-export const syncReminders = async () => {
+// Bumped on sign-out so a sync already in flight cannot schedule the previous user's reminders.
+let generation = 0;
+let running: Promise<void> | null = null;
+let rerun = false;
+
+const syncOnce = async (gen: number) => {
   const wanted = new Map((await loadSchedule()).map((r) => [identifierOf(r), r]));
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   const scheduledIds = new Set(scheduled.map((n) => n.identifier));
 
+  if (gen !== generation) return;
   await Promise.all(
     scheduled
       .filter((n) => !wanted.has(n.identifier))
       .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
   );
+  if (gen !== generation) return;
   await Promise.all(
     [...wanted]
       .filter(([id]) => !scheduledIds.has(id))
@@ -55,10 +62,34 @@ export const syncReminders = async () => {
   );
 };
 
+// One sync at a time: a change during a sync triggers one more pass instead of a racing second run.
+export const syncReminders = (): Promise<void> => {
+  if (running) {
+    rerun = true;
+    return running;
+  }
+  const gen = generation;
+  running = (async () => {
+    do {
+      rerun = false;
+      await syncOnce(gen);
+    } while (rerun && gen === generation);
+  })().finally(() => {
+    running = null;
+  });
+  return running;
+};
+
+const clearReminders = async () => {
+  generation++;
+  await running;
+  await Notifications.cancelAllScheduledNotificationsAsync();
+};
+
 export function useReminders(auth: "unknown" | "signedIn" | "signedOut") {
   const signedIn = auth === "signedIn";
   useEffect(() => {
-    if (auth === "signedOut") Notifications.cancelAllScheduledNotificationsAsync();
+    if (auth === "signedOut") clearReminders();
     if (!signedIn) return;
     Notifications.requestPermissionsAsync();
     syncReminders();
@@ -69,10 +100,13 @@ export function useReminders(auth: "unknown" | "signedIn" | "signedOut") {
   }, [auth, signedIn]);
 
   const response = Notifications.useLastNotificationResponse();
+  const handledTap = useRef<string | null>(null);
   useEffect(() => {
-    const sowId = response?.notification.request.content.data?.sowId;
-    if (signedIn && typeof sowId === "string") {
-      router.push({ pathname: "/sows/[id]", params: { id: sowId } });
-    }
+    if (!signedIn || !response) return;
+    const tapId = `${response.notification.request.identifier}@${response.notification.date}`;
+    const sowId = response.notification.request.content.data?.sowId;
+    if (handledTap.current === tapId || typeof sowId !== "string") return;
+    handledTap.current = tapId;
+    router.push({ pathname: "/sows/[id]", params: { id: sowId } });
   }, [response, signedIn]);
 }
