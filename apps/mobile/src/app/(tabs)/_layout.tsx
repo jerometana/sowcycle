@@ -28,6 +28,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="medicines"
+        options={{
+          title: "ยา",
+          tabBarIcon: ({ color, size }) => <Ionicons name="medkit" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="calendar"
         options={{
           title: "ปฏิทิน",
