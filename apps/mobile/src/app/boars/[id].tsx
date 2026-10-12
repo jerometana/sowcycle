@@ -7,14 +7,16 @@ import { SubmitButton } from "../../components/Form";
 import { createBoar, deleteBoar, saveErrorMessage, updateBoar } from "../../db/mutations";
 import { useOnline } from "../../db/useOnline";
 
-type BoarDetail = { breed: string; description: string | null; breedings: number };
+type BoarDetail = { breed: string; description: string | null; breedings: number; litters: number };
 
 export default function BoarSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isNew = id === "new";
   const online = useOnline();
   const { data } = useQuery<BoarDetail>(
-    `select bo.breed, bo.description, (select count(*) from breedings b where b.boar_id = bo.id) as breedings
+    `select bo.breed, bo.description,
+       (select count(*) from breedings b where b.boar_id = bo.id) as breedings,
+       (select count(*) from litters l where l.boar_id = bo.id) as litters
      from boars bo where bo.id = ?`,
     [id]
   );
@@ -31,7 +33,7 @@ export default function BoarSheet() {
     }
   }, [boar?.breed, boar?.description]);
 
-  const run = async (write: () => Promise<void>) => {
+  const run = async (write: () => Promise<void>, retrySafe = true) => {
     setBusy(true);
     setError(null);
     try {
@@ -39,7 +41,7 @@ export default function BoarSheet() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch (e) {
-      setError(saveErrorMessage(e));
+      setError(saveErrorMessage(e, retrySafe));
       setBusy(false);
     }
   };
@@ -47,7 +49,7 @@ export default function BoarSheet() {
   const save = () => {
     const input = { breed: breed.trim(), description: description.trim() };
     if (!input.breed) return setError("กรุณากรอกสายพันธุ์");
-    run(() => (isNew ? createBoar(input) : updateBoar(id, input)));
+    run(() => (isNew ? createBoar(input) : updateBoar(id, input)), !isNew);
   };
 
   const confirmDelete = () =>
@@ -56,7 +58,8 @@ export default function BoarSheet() {
       { text: "ลบ", style: "destructive", onPress: () => run(() => deleteBoar(id)) },
     ]);
 
-  const inUse = (boar?.breedings ?? 0) > 0;
+  const uses = (boar?.breedings ?? 0) + (boar?.litters ?? 0);
+  const inUse = uses > 0;
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
@@ -82,7 +85,7 @@ export default function BoarSheet() {
           >
             <Text style={s.deleteText}>ลบพ่อพันธุ์</Text>
           </Pressable>
-          {inUse && <Text style={s.hint}>ลบไม่ได้ เพราะใช้ผสมไปแล้ว {boar.breedings} ครั้ง</Text>}
+          {inUse && <Text style={s.hint}>ลบไม่ได้ เพราะมีประวัติการผสมหรือครอกที่ใช้พ่อพันธุ์นี้ ({uses} รายการ)</Text>}
         </>
       )}
     </ScrollView>
