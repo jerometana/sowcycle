@@ -1,0 +1,11 @@
+bucket_definitions:
+  user_data:
+    parameters: SELECT request.user_id() AS user_id
+    data:
+      - SELECT CAST(id AS TEXT) AS id, name, birth_date, add_date, is_available, is_active, breasts_count FROM sows WHERE user_id = bucket.user_id
+      - SELECT CAST(id AS TEXT) AS id, breed, description FROM boars WHERE user_id = bucket.user_id
+  sow_data:
+    parameters: SELECT id AS sow_id FROM sows WHERE user_id = request.user_id()
+    data:
+      - SELECT CAST(id AS TEXT) AS id, CAST(sow_id AS TEXT) AS sow_id, CAST(boar_id AS TEXT) AS boar_id, breed_date, expected_farrow_date, actual_farrow_date, piglets_born_count, piglets_male_born_alive, piglets_female_born_alive, piglets_born_dead, avg_weight, is_aborted, updated_at FROM breedings WHERE sow_id = bucket.sow_id
+      - SELECT CAST(id AS TEXT) AS id, CAST(sow_id AS TEXT) AS sow_id, CAST(boar_id AS TEXT) AS boar_id, birth_date, piglets_born_count, piglets_male_born_alive, piglets_female_born_alive, avg_weight, fattening_at, saleable_at, sold_at, updated_at FROM litters WHERE sow_id = bucket.sow_id
