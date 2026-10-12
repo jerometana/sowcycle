@@ -1,4 +1,4 @@
-import { Boar } from "@/types/boar";
+import { Boar } from "@sowcycle/core";
 import { createClient } from "@/utils/supabase/client";
 import { getCurrentUser } from "./auth";
 

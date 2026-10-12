@@ -3,9 +3,6 @@ import { useLitterStore } from "@/stores/useLitterStore";
 // import { useBoarStore } from "@/stores/useBoarStore";
 import { getAllLitters } from "@/services/litter";
 // import { getAllBoars } from "@/services/boar";
-// import { Sow } from "@/types/sow";
-// import { Litter } from "@/types/litter";
-// import { Boar } from "@/types/boar";
 
 export function useLitterData() {
   const { litters, setLitters } = useLitterStore();

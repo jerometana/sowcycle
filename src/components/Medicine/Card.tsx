@@ -8,13 +8,10 @@ import {
   Asterisk,
 } from "lucide-react";
 import MedicineForm from "./Form";
-import { Medicine } from "@/types/medicine";
+import { Medicine, MedicalRecord, Sow, Boar } from "@sowcycle/core";
 import InfoIcon from "../InfoIcon";
 import { formatDateTH } from "@/lib/utils";
-import { MedicalRecord } from "@/types/medicalRecord";
 import { SowTags } from "../Sow/SowTags";
-import { Sow } from "@/types/sow";
-import { Boar } from "@/types/boar";
 
 export default function MedicineCard({ medicine }: { medicine: Medicine }) {
   if (!medicine) return null;

@@ -6,7 +6,7 @@ import {
   updateMedicine,
 } from "@/services/medicine";
 import { useMedicineStore } from "@/stores/useMedicineStore";
-import { Medicine } from "@/types/medicine";
+import { Medicine } from "@sowcycle/core";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -193,7 +193,7 @@ export default function MedicineForm({ editingMedicine, setDialog }: any) {
             >
               <p>
                 คุณแน่ใจหรือไม่ที่จะลบยานี้{" "}
-                <span className="font-bold">{medicine.name}</span>
+                <span className="font-bold">{medicine.title}</span>
               </p>
               <div className="flex justify-end gap-2">
                 <Button

@@ -1,7 +1,6 @@
 "use client";
 
-import { Litter } from "@/types/litter";
-import { Sow } from "@/types/sow";
+import { Litter, Sow, litterStage } from "@sowcycle/core";
 import { Button } from "../ui/button";
 import {
   Check,
@@ -47,9 +46,7 @@ export default function LitterDrawer({ litter, index }: LitterDrawerProps) {
     );
   }, [litter.birth_date, litter.sold_at]);
 
-  const isSold = !!litter.sold_at;
-  const isFattening = !!litter.fattening_at && !isSold;
-  const isBorn = !litter.fattening_at;
+  const stage = litterStage(litter);
 
   return (
     <div className="flex flex-col gap-4">
@@ -57,14 +54,12 @@ export default function LitterDrawer({ litter, index }: LitterDrawerProps) {
         <span className="font-semibold text-gray-900">{ageInDays} วัน</span>
       </InfoIcon>
       <InfoIcon icon={<List size={24} />} label="สถานะ">
-        {isSold ? (
+        {stage === "sold" ? (
           <span className="font-semibold text-green-600">ขายแล้ว</span>
-        ) : isFattening ? (
+        ) : stage === "fattening" ? (
           <span className="font-semibold text-orange-500">กำลังขุน</span>
-        ) : isBorn ? (
-          <span className="font-semibold text-gray-900">คลอดแล้ว</span>
         ) : (
-          <span className="font-semibold text-gray-900">ไม่ระบุ</span>
+          <span className="font-semibold text-gray-900">คลอดแล้ว</span>
         )}
       </InfoIcon>
       {/* Count Stats */}
@@ -89,7 +84,7 @@ export default function LitterDrawer({ litter, index }: LitterDrawerProps) {
       </InfoIcon>
 
       {/* Weight Stats (Only if Sold) */}
-      {isSold && litter.avg_weight && (
+      {stage === "sold" && litter.avg_weight && (
         <InfoIcon
           icon={<Gauge size={24} />}
           label="น้ำหนักขายเฉลี่ย"
@@ -154,7 +149,7 @@ export default function LitterDrawer({ litter, index }: LitterDrawerProps) {
       {/* Timeline */}
       <div className="relative flex flex-col gap-4 p-4 bg-secondary rounded-xl">
         {/* Vertical Line */}
-        {(isFattening || isSold) && (
+        {stage !== "nursing" && (
           <div className="absolute left-10 top-6 bottom-6 w-[2px] bg-gray-200 -z-0" />
         )}
 
@@ -173,7 +168,7 @@ export default function LitterDrawer({ litter, index }: LitterDrawerProps) {
             </InfoIcon>
 
             {/* Fattening */}
-            {(isFattening || isSold) && (
+            {stage !== "nursing" && (
               <div className="relative">
                 <InfoIcon
                   icon={<Beef size={24} />}
@@ -190,15 +185,15 @@ export default function LitterDrawer({ litter, index }: LitterDrawerProps) {
             )}
 
             {/* Sale */}
-            {(isFattening || isSold) && (
+            {stage !== "nursing" && (
               <div className="relative">
                 <InfoIcon
                   icon={<Banknote size={24} />}
-                  label={isSold ? "ขายแล้วเมื่อ" : "กำหนดขาย"}
+                  label={stage === "sold" ? "ขายแล้วเมื่อ" : "กำหนดขาย"}
                   className="bg-white rounded-2xl w-12 h-12 flex items-center justify-center"
                 >
                   <span className="font-semibold text-gray-900">
-                    {isSold
+                    {stage === "sold"
                       ? formatDateTH(litter.sold_at!, true, true, true)
                       : formatDateTH(litter.saleable_at!, true, true, true)}
                   </span>
@@ -212,7 +207,7 @@ export default function LitterDrawer({ litter, index }: LitterDrawerProps) {
       {/* Actions Section */}
       <div className="space-y-3">
         {/* Record Fattening Button */}
-        {isBorn && (
+        {stage === "nursing" && (
           <DrawerDialog
             title="เพิ่มวันเริ่มขุน"
             dialogTriggerButton={
@@ -230,7 +225,7 @@ export default function LitterDrawer({ litter, index }: LitterDrawerProps) {
         )}
 
         {/* Record Sale Button */}
-        {isFattening && (
+        {stage === "fattening" && (
           <DrawerDialog
             title="บันทึกวันขาย"
             dialogTriggerButton={
@@ -244,7 +239,7 @@ export default function LitterDrawer({ litter, index }: LitterDrawerProps) {
         )}
 
         {/* Add to Calendar */}
-        {isFattening && litter.saleable_at && (
+        {stage === "fattening" && litter.saleable_at && (
           <AddToCalendarButton
             title={`กำหนดจับหมูขุน แม่${litter.sows?.name}`}
             startDate={new Date(litter.saleable_at)}

@@ -1,4 +1,4 @@
-import { Boar } from "@/types/boar";
+import { Boar } from "@sowcycle/core";
 import BoarCard from "./Card";
 import { FadeIn } from "@/components/animations/FadeIn";
 

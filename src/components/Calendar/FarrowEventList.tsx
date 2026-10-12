@@ -19,7 +19,7 @@ import { SowTags } from "../Sow/SowTags";
 import { formatDateTH, getDaysRemaining } from "@/lib/utils";
 import DrawerDialog from "@/components/DrawerDialog";
 import { FarrowForm } from "@/components/Breeding/Form";
-import { Breeding } from "@/types/breeding";
+import { Breeding } from "@sowcycle/core";
 import BreedingCard from "@/components/Breeding/Card";
 import { FarrowEvent } from "@/hooks/useCalendarData";
 

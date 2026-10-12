@@ -4,9 +4,7 @@ import CountdownBadge from "@/components/CountdownBadge";
 import PigletCountChart from "@/components/Sow/PigletCountChart";
 import AvgWeightChart from "@/components/Sow/AvgWeightChart";
 import { formatDateTH } from "@/lib/utils";
-import { Sow } from "@/types/sow";
-import { Breeding } from "@/types/breeding";
-import { Litter } from "@/types/litter";
+import { Sow, Breeding, Litter, Boar, countsTowardLitterStats } from "@sowcycle/core";
 import {
   ArrowDown,
   Cake,
@@ -24,7 +22,6 @@ import DialogComponent from "../DrawerDialog";
 import BoarDetailsCard from "../Boar/DetailsCard";
 import { Button } from "../ui/button";
 import SowForm from "./Form";
-import { Boar } from "@/types/boar";
 
 interface SowDetailsCardProps {
   sow: Sow & { boars: Boar[] };
@@ -42,11 +39,7 @@ export default function SowDetailsCard({
   averageWeightChart,
 }: SowDetailsCardProps) {
   const validBreedingsCount = breedings.filter(
-    (breeding) =>
-      breeding.actual_farrow_date &&
-      breeding.piglets_born_count !== null &&
-      !breeding.is_aborted
-  ).length;
+    countsTowardLitterStats).length;
 
   const validLittersCount = litters.filter(
     (litter) => litter.avg_weight && litter.avg_weight > 0

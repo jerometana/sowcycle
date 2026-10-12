@@ -1,4 +1,4 @@
-import { Litter } from "@/types/litter";
+import { Litter } from "@sowcycle/core";
 import { create } from "zustand";
 
 interface LitterState {

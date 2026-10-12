@@ -1,6 +1,6 @@
 "use client";
 
-import { Sow } from "@/types/sow";
+import { Sow } from "@sowcycle/core";
 import Link from "next/link";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "../ui/button";

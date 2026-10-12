@@ -1,6 +1,6 @@
 "use client";
 
-import { Boar } from "@/types/boar";
+import { Boar } from "@sowcycle/core";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { ChevronRight, Dna } from "lucide-react";
 import DialogComponent from "../DrawerDialog";

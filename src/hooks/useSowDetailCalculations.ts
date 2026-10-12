@@ -1,15 +1,10 @@
 import { useMemo } from "react";
-import { Breeding } from "@/types/breeding";
-import { Litter } from "@/types/litter";
+import { Breeding, Litter, countsTowardLitterStats } from "@sowcycle/core";
 
 export function useSowDetailCalculations(breedings: Breeding[], litters: Litter[]) {
   const averagePigletsBornCount = useMemo(() => {
     const validBreedings = breedings.filter(
-      (breeding) =>
-        breeding.actual_farrow_date &&
-        breeding.piglets_born_count !== null &&
-        !breeding.is_aborted
-    );
+      countsTowardLitterStats);
     
     if (validBreedings.length === 0) return 0;
     

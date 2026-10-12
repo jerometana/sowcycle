@@ -52,7 +52,7 @@ export default function BoarsContent() {
       .filter((boar) => boar.breed.includes(search))
       .filter((boar) => {
         return Object.entries(filter.value).every(([key, value]) => {
-          return boar[key] === value;
+          return (boar as unknown as Record<string, unknown>)[key] === value;
         });
       });
   }, [boars, search, filter]);

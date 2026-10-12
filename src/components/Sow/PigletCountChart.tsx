@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDateTH } from "@/lib/utils";
-import { Breeding } from "@/types/breeding";
+import { Breeding, countsTowardLitterStats } from "@sowcycle/core";
 import {
   LineChart,
   Line,
@@ -21,11 +21,7 @@ export default function PigletCountChart({ breedings }: PigletCountChartProps) {
   // Prepare data for the chart
   const chartData = breedings
     .filter(
-      (breeding) =>
-        breeding.actual_farrow_date &&
-        breeding.piglets_born_count !== null &&
-        !breeding.is_aborted
-    )
+      countsTowardLitterStats)
     .sort((a, b) => {
       return (
         new Date(a.actual_farrow_date!).getTime() -

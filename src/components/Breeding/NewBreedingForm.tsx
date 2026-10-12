@@ -5,10 +5,8 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Check, Heart, Loader2 } from "lucide-react";
-import { PREGNANCY_DURATION } from "@/lib/constant";
-import { Breeding } from "@/types/breeding";
+import { expectedFarrowDate, Breeding, newBreedingFormSchema, NewBreedingFormData } from "@sowcycle/core";
 import { useBreedingOperations } from "@/hooks/useBreedingOperations";
-import { newBreedingFormSchema, NewBreedingFormData } from "@/schemas/breedingSchemas";
 import { 
   SowSelectField, 
   BoarSelectField, 
@@ -41,13 +39,11 @@ export function NewBreedingForm({ id, breeding, setDialog }: NewBreedingFormProp
         },
   });
 
-  const expectedFarrowDate = useMemo(() => {
+  const expectedDate = useMemo(() => {
     const breedDate = form.watch("breed_date");
     if (!breedDate) return undefined;
     
-    const expected = new Date(breedDate);
-    expected.setDate(expected.getDate() + PREGNANCY_DURATION);
-    return expected;
+    return expectedFarrowDate(breedDate);
   }, [form.watch("breed_date")]);
 
   const onSubmit = async (values: NewBreedingFormData) => {
@@ -56,7 +52,7 @@ export function NewBreedingForm({ id, breeding, setDialog }: NewBreedingFormProp
         sow_id: Number(values.sow_id),
         boar_id: values.boar_id,
         breed_date: values.breed_date.toISOString(),
-        expected_farrow_date: expectedFarrowDate!.toISOString(),
+        expected_farrow_date: expectedDate!.toISOString(),
       };
 
       if (breeding) {
@@ -79,7 +75,7 @@ export function NewBreedingForm({ id, breeding, setDialog }: NewBreedingFormProp
 
         <div className="flex w-full gap-2">
           <BreedDateField form={form} />
-          <ExpectedFarrowDateField expectedDate={expectedFarrowDate} />
+          <ExpectedFarrowDateField expectedDate={expectedDate} />
         </div>
 
         <div className={cn(

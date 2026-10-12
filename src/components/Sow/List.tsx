@@ -1,4 +1,4 @@
-import { Sow } from "@/types/sow";
+import { Sow } from "@sowcycle/core";
 import SowCard from "./Card";
 import { FadeIn } from "../animations/FadeIn";
 import { useBoarOperations } from "@/hooks/useBoarOperations";

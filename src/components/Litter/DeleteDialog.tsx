@@ -6,7 +6,7 @@ import { useLitterStore } from "@/stores/useLitterStore";
 import { useSowStore } from "@/stores/useSowStore";
 import { deleteLitter } from "@/services/litter";
 import { patchSow } from "@/services/sow";
-import { Litter } from "@/types/litter";
+import { Litter } from "@sowcycle/core";
 
 interface DeleteDialogProps {
   litter: Litter;

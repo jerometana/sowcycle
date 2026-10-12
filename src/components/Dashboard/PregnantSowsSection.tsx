@@ -1,6 +1,6 @@
 import { Heart } from "lucide-react";
 import SowList from "@/components/Sow/List";
-import type { Sow } from "@/types/sow";
+import { type Sow } from "@sowcycle/core";
 
 interface PregnantSowsSectionProps {
   sows: Sow[];

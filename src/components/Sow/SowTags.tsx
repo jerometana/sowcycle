@@ -2,7 +2,7 @@
 
 import { Dna, Milk } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Boar } from "@/types/boar";
+import { Boar } from "@sowcycle/core";
 
 interface BreedTagsProps {
   breeds?: Boar[];

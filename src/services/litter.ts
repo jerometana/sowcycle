@@ -1,4 +1,4 @@
-import { Litter } from "@/types/litter";
+import { Litter } from "@sowcycle/core";
 import { createClient } from "@/utils/supabase/client";
 import { getCurrentUser } from "./auth";
 
