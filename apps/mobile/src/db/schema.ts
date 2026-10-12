@@ -13,6 +13,21 @@ export const AppSchema = new Schema({
     breed: column.text,
     description: column.text,
   }),
+  medicines: new Table({
+    title: column.text,
+    description: column.text,
+    stock_count: column.integer,
+  }),
+  medical_records: new Table(
+    {
+      sow_id: column.text,
+      medicine_id: column.text,
+      used_at: column.text,
+      symptoms: column.text,
+      notes: column.text,
+    },
+    { indexes: { sow: ["sow_id", "used_at"] } }
+  ),
   breedings: new Table(
     {
       sow_id: column.text,

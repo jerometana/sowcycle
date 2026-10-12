@@ -109,3 +109,38 @@ export const updateBoar = (id: string, input: BoarInput) =>
   runWrite(supabase.from("boars").update({ ...input, updated_at: new Date().toISOString() }).eq("id", Number(id)));
 
 export const deleteBoar = (id: string) => runWrite(supabase.from("boars").delete().eq("id", Number(id)));
+
+export type MedicineInput = { title: string; description: string; stock_count: number };
+
+export const createMedicine = async (input: MedicineInput) => {
+  const { data } = await supabase.auth.getSession();
+  return runWrite(supabase.from("medicines").insert({ ...input, user_id: data.session?.user.id }));
+};
+
+export const updateMedicine = (id: string, input: MedicineInput) =>
+  runWrite(supabase.from("medicines").update({ ...input, updated_at: new Date().toISOString() }).eq("id", id));
+
+export const deleteMedicine = (id: string) => runWrite(supabase.from("medicines").delete().eq("id", id));
+
+export type TreatmentInput = {
+  sowId: string;
+  medicineId: string;
+  usedAt: Date;
+  symptoms: string;
+  notes: string;
+};
+
+export const recordTreatment = (input: TreatmentInput) =>
+  runWrite(
+    supabase.from("medical_records").insert({
+      sow_id: Number(input.sowId),
+      medicine_id: input.medicineId,
+      used_at: input.usedAt.toISOString(),
+      symptoms: input.symptoms,
+      notes: input.notes,
+      updated_at: new Date().toISOString(),
+    })
+  );
+
+export const deleteTreatment = (id: string) =>
+  runWrite(supabase.from("medical_records").delete().eq("id", Number(id)));

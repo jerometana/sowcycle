@@ -2,7 +2,8 @@ import { useQuery } from "@powersync/react-native";
 import { breedingStage, countsTowardLitterStats, pregnancyCheckDates, type BreedingStage } from "@sowcycle/core";
 import { differenceInCalendarDays } from "date-fns";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { deleteTreatment, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { ColumnChart, type ChartPoint } from "../../../components/ColumnChart";
 import { thaiDate, thaiMonthYear } from "../../../lib/date";
@@ -42,6 +43,23 @@ const pigletPoints = (breedings: BreedingRow[]): ChartPoint[] =>
     .sort((a, b) => a.actual_farrow_date!.localeCompare(b.actual_farrow_date!))
     .map((b) => ({ key: b.id, label: thaiMonthYear(b.actual_farrow_date!), value: b.piglets_born_count ?? 0 }));
 
+type TreatmentRow = { id: string; used_at: string; symptoms: string | null; notes: string | null; medicine: string | null };
+
+const TREATMENTS = `
+  select r.id, r.used_at, r.symptoms, r.notes, m.title as medicine
+  from medical_records r left join medicines m on m.id = r.medicine_id
+  where r.sow_id = ? order by r.used_at desc`;
+
+const confirmDeleteTreatment = (t: TreatmentRow) =>
+  Alert.alert("ลบประวัติการรักษา", `ลบการใช้ ${t.medicine ?? "ยา"} วันที่ ${thaiDate(t.used_at, true)} หรือไม่`, [
+    { text: "ยกเลิก", style: "cancel" },
+    {
+      text: "ลบ",
+      style: "destructive",
+      onPress: () => deleteTreatment(t.id).catch((e) => Alert.alert("ลบไม่สำเร็จ", saveErrorMessage(e))),
+    },
+  ]);
+
 type SoldLitterRow = { id: string; sold_at: string | null; avg_weight: number | null };
 
 // avg_weight holds the birth weight until a sale overwrites it, so only sold litters carry a sale weight.
@@ -56,6 +74,7 @@ export default function SowDetail() {
   const online = useOnline();
   const { data: sows } = useQuery<{ name: string }>("select name from sows where id = ?", [id]);
   const { data: breedings } = useQuery<BreedingRow>(BREEDINGS, [id]);
+  const { data: treatments } = useQuery<TreatmentRow>(TREATMENTS, [id]);
   const { data: litters } = useQuery<SoldLitterRow>("select id, sold_at, avg_weight from litters where sow_id = ?", [id]);
   const openPregnancy = breedings.find((b) => stageOf(b) === "pregnant");
 
@@ -77,6 +96,22 @@ export default function SowDetail() {
 
         <ColumnChart title="จำนวนลูกมีชีวิตต่อครอก" unit="ตัว" points={pigletPoints(breedings)} />
         <ColumnChart title="น้ำหนักขายเฉลี่ยต่อครอก (กก.)" unit="กก." points={saleWeightPoints(litters)} />
+
+        <View style={s.sectionRow}>
+          <Text style={s.section}>ประวัติการรักษา</Text>
+          <Pressable hitSlop={8} onPress={() => router.push({ pathname: "/sows/[id]/treatment", params: { id } })}>
+            <Text style={s.link}>+ บันทึกการใช้ยา</Text>
+          </Pressable>
+        </View>
+        {treatments.length === 0 && <Text style={s.empty}>ยังไม่มีประวัติการรักษา</Text>}
+        {treatments.map((t) => (
+          <Pressable key={t.id} style={s.card} onLongPress={() => confirmDeleteTreatment(t)} delayLongPress={400}>
+            <Text style={s.cardTitle}>{t.medicine ?? "ไม่ระบุยา"}</Text>
+            <Text style={s.line}>ใช้เมื่อ {thaiDate(t.used_at, true)}</Text>
+            {!!t.symptoms && <Text style={s.line}>อาการ: {t.symptoms}</Text>}
+            {!!t.notes && <Text style={s.line}>หมายเหตุ: {t.notes}</Text>}
+          </Pressable>
+        ))}
 
         <Text style={s.section}>ประวัติการผสม</Text>
         {breedings.length === 0 && <Text style={s.empty}>ยังไม่มีประวัติการผสม</Text>}
@@ -148,6 +183,8 @@ const s = StyleSheet.create({
   actionText: { color: "#fff", fontSize: 17, fontWeight: "600" },
   offline: { backgroundColor: "#fef3c7", color: "#92400e", padding: 10, borderRadius: 10, textAlign: "center" },
   section: { fontSize: 18, fontWeight: "600", marginTop: 8 },
+  sectionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
+  link: { color: "#ec4899", fontSize: 15, fontWeight: "600" },
   empty: { color: "#737373" },
   card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, gap: 4 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

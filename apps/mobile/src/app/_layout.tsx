@@ -34,6 +34,14 @@ export default function RootLayout() {
         <Stack.Protected guard={!!session}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "แม่พันธุ์" }} />
           <Stack.Screen
+            name="medicines/[id]"
+            options={{ presentation: "formSheet", title: "ยา", sheetAllowedDetents: [1] }}
+          />
+          <Stack.Screen
+            name="sows/[id]/treatment"
+            options={{ presentation: "formSheet", title: "บันทึกการใช้ยา", sheetAllowedDetents: [1] }}
+          />
+          <Stack.Screen
             name="boars/[id]"
             options={{ presentation: "formSheet", title: "พ่อพันธุ์", sheetAllowedDetents: [1] }}
           />
