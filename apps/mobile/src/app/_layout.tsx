@@ -15,6 +15,18 @@ import { supabase } from "../lib/supabase";
 import { useReminders } from "../notifications/reminders";
 import { color, fonts } from "../theme";
 
+// Form sheets styled like the Drawer component: grabber, rounded top, white surface.
+const drawer = (title: string, sheetAllowedDetents: number[] = [1]) =>
+  ({
+    presentation: "formSheet",
+    title,
+    sheetAllowedDetents,
+    sheetGrabberVisible: true,
+    sheetCornerRadius: 24,
+    contentStyle: { backgroundColor: color.card },
+    headerStyle: { backgroundColor: color.card },
+  }) as const;
+
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [fontsLoaded] = useFonts({
@@ -56,32 +68,31 @@ export default function RootLayout() {
       >
         <Stack.Protected guard={!!session}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="account" options={{ title: "บัญชี" }} />
           <Stack.Screen name="boars/index" options={{ title: "สายพันธุ์" }} />
           <Stack.Screen
             name="medicines/[id]"
-            options={{ presentation: "formSheet", contentStyle: { backgroundColor: color.card }, headerStyle: { backgroundColor: color.card }, title: "ยา", sheetAllowedDetents: [1] }}
+            options={drawer("ยา")}
           />
           <Stack.Screen
             name="sows/[id]/treatment"
-            options={{ presentation: "formSheet", contentStyle: { backgroundColor: color.card }, headerStyle: { backgroundColor: color.card }, title: "บันทึกการใช้ยา", sheetAllowedDetents: [1] }}
+            options={drawer("บันทึกการใช้ยา")}
           />
           <Stack.Screen
             name="boars/[id]"
-            options={{ presentation: "formSheet", contentStyle: { backgroundColor: color.card }, headerStyle: { backgroundColor: color.card }, title: "พ่อพันธุ์", sheetAllowedDetents: [1] }}
+            options={drawer("พ่อพันธุ์")}
           />
           <Stack.Screen
             name="litters/[id]"
-            options={{ presentation: "formSheet", contentStyle: { backgroundColor: color.card }, headerStyle: { backgroundColor: color.card }, title: "ครอก", sheetAllowedDetents: [1] }}
+            options={drawer("ครอก")}
           />
           <Stack.Screen name="sows/[id]/index" options={{ title: "" }} />
           <Stack.Screen
             name="sows/[id]/breed"
-            options={{ presentation: "formSheet", contentStyle: { backgroundColor: color.card }, headerStyle: { backgroundColor: color.card }, title: "เพิ่มการผสม", sheetAllowedDetents: [0.6, 1] }}
+            options={drawer("เพิ่มการผสม", [0.6, 1])}
           />
           <Stack.Screen
             name="sows/[id]/farrow"
-            options={{ presentation: "formSheet", contentStyle: { backgroundColor: color.card }, headerStyle: { backgroundColor: color.card }, title: "บันทึกการคลอด", sheetAllowedDetents: [1] }}
+            options={drawer("บันทึกการคลอด")}
           />
         </Stack.Protected>
         <Stack.Protected guard={!session}>

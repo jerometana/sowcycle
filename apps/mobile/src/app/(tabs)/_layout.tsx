@@ -1,21 +1,28 @@
-import { router, Tabs } from "expo-router";
+import { Tabs } from "expo-router";
 import type { LucideIcon } from "lucide-react-native";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Animated, useAnimatedValue, type ColorValue } from "react-native";
+import { AccountDrawer } from "../../components/AccountDrawer";
 import { PressableScale } from "../../components/motion";
 import { color, fonts } from "../../theme";
 import { Calendar, Fence, House, PiggyBank, Syringe, User } from "../../theme/icons";
 
-const AccountButton = () => (
-  <PressableScale
-    hitSlop={8}
-    accessibilityLabel="บัญชี"
-    onPress={() => router.push("/account")}
-    style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center", marginRight: 16 }}
-  >
-    <User size={20} color={color.gray600} />
-  </PressableScale>
-);
+function AccountButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <PressableScale
+        hitSlop={8}
+        accessibilityLabel="บัญชี"
+        onPress={() => setOpen(true)}
+        style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center", marginRight: 16 }}
+      >
+        <User size={20} color={color.gray600} />
+      </PressableScale>
+      <AccountDrawer open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
 
 function TabIcon(props: { icon: LucideIcon; color: ColorValue; focused: boolean }) {
   const scale = useAnimatedValue(1);
