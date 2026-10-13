@@ -26,6 +26,7 @@ import {
   Plus,
   Syringe,
 } from "../../../theme/icons";
+import { haptic } from "../../../lib/haptics";
 
 type SowRow = { name: string; breasts_count: number | null; birth_date: string | null; add_date: string | null };
 
@@ -268,13 +269,21 @@ function BreedingCard({ breeding: b, number }: { breeding: BreedingRow; number: 
 
 function TreatmentCard({ treatment: t }: { treatment: TreatmentRow }) {
   const [confirmDrawer, confirm] = useConfirm();
-  const confirmDelete = () =>
+  const confirmDelete = () => {
+    haptic.longPress();
     confirm({
       title: "ลบประวัติการรักษา",
       message: `ลบการใช้ ${t.medicine ?? "ยา"} วันที่ ${thaiDateLong(t.used_at, true)} หรือไม่`,
       confirmLabel: "ลบ",
-      onConfirm: () => deleteTreatment(t.id).catch((e) => Alert.alert("ลบไม่สำเร็จ", saveErrorMessage(e))),
+      onConfirm: () =>
+        deleteTreatment(t.id)
+          .then(haptic.success)
+          .catch((e) => {
+            haptic.error();
+            Alert.alert("ลบไม่สำเร็จ", saveErrorMessage(e));
+          }),
     });
+  };
   return (
     <Pressable onLongPress={confirmDelete} delayLongPress={400}>
       <Card>

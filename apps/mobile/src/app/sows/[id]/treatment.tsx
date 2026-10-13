@@ -1,5 +1,4 @@
 import { useQuery } from "@powersync/react-native";
-import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -8,6 +7,7 @@ import { SubmitButton } from "../../../components/Form";
 import { recordTreatment, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { Text, TextInput } from "../../../theme";
+import { haptic } from "../../../lib/haptics";
 
 export default function TreatmentSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,9 +28,10 @@ export default function TreatmentSheet() {
     setError(null);
     try {
       await recordTreatment({ sowId: id, medicineId, usedAt, symptoms: symptoms.trim(), notes: notes.trim() });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptic.success();
       router.back();
     } catch (e) {
+      haptic.error();
       setError(saveErrorMessage(e, false));
       setBusy(false);
     }

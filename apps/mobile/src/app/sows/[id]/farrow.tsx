@@ -1,6 +1,5 @@
 import { useQuery } from "@powersync/react-native";
 import { farrowFormSchema } from "@sowcycle/core";
-import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
@@ -10,6 +9,7 @@ import { recordFarrow, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { Text } from "../../../theme";
 import { PressableScale } from "../../../components/motion";
+import { haptic } from "../../../lib/haptics";
 
 export default function FarrowSheet() {
   const { breedingId } = useLocalSearchParams<{ id: string; breedingId: string }>();
@@ -48,9 +48,10 @@ export default function FarrowSheet() {
         avgWeight: parsed.data.avg_weight ?? null,
         isAborted: aborted,
       });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptic.success();
       router.back();
     } catch (e) {
+      haptic.error();
       setError(saveErrorMessage(e));
       setBusy(false);
     }
@@ -63,7 +64,10 @@ export default function FarrowSheet() {
       keyboardShouldPersistTaps="handled"
     >
       <DateField label={aborted ? "วันที่แท้ง" : "วันที่คลอด"} value={farrowDate} onChange={setFarrowDate} />
-      <PressableScale onPress={() => setAborted(!aborted)} style={[s.toggle, aborted && s.toggleOn]}>
+      <PressableScale onPress={() => {
+          haptic.select();
+          setAborted(!aborted);
+        }} style={[s.toggle, aborted && s.toggleOn]}>
         <Text style={[s.toggleText, aborted && { color: "#dc2626" }]}>{aborted ? "✓ แท้ง" : "แท้ง"}</Text>
       </PressableScale>
       {!aborted && (

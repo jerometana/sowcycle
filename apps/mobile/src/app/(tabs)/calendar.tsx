@@ -22,6 +22,7 @@ import { EVENT_BREEDINGS, toEventBreeding } from "../../db/cycleEvents";
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Calendar as CalendarIcon, ChevronRight, CircleAlert, Heart, PiggyBank } from "../../theme/icons";
+import { haptic } from "../../lib/haptics";
 
 const WEEKDAYS = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
 const SWIPE_DISTANCE = 50;
@@ -103,11 +104,17 @@ export default function CalendarScreen() {
   const selectedEvents = eventsByDay.get(dayKey(selected)) ?? [];
   const awayFromToday = !isSameDay(selected, today) || !isSameMonth(month, today);
 
+  const changeMonth = (by: number) => {
+    haptic.select();
+    setMonth((m) => addMonths(m, by));
+  };
   const select = (d: Date) => {
+    haptic.select();
     setSelected(d);
     if (!isSameMonth(d, month)) setMonth(startOfMonth(d));
   };
   const goToday = () => {
+    haptic.select();
     setSelected(today);
     setMonth(startOfMonth(today));
   };
@@ -123,14 +130,14 @@ export default function CalendarScreen() {
     if (!start) return;
     const dx = e.nativeEvent.pageX - start.x;
     const dy = e.nativeEvent.pageY - start.y;
-    if (Math.abs(dx) >= SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy) * 2) setMonth((m) => addMonths(m, dx < 0 ? 1 : -1));
+    if (Math.abs(dx) >= SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy) * 2) changeMonth(dx < 0 ? 1 : -1);
   };
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={screen.content}>
       <View style={s.calendar} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
         <View style={s.monthRow}>
-          <PressableScale hitSlop={12} accessibilityLabel="เดือนก่อนหน้า" onPress={() => setMonth(addMonths(month, -1))}>
+          <PressableScale hitSlop={12} accessibilityLabel="เดือนก่อนหน้า" onPress={() => changeMonth(-1)}>
             <View style={{ transform: [{ rotate: "180deg" }] }}>
               <ChevronRight size={20} color={color.mutedForeground} />
             </View>
@@ -143,7 +150,7 @@ export default function CalendarScreen() {
               </PressableScale>
             )}
           </View>
-          <PressableScale hitSlop={12} accessibilityLabel="เดือนถัดไป" onPress={() => setMonth(addMonths(month, 1))}>
+          <PressableScale hitSlop={12} accessibilityLabel="เดือนถัดไป" onPress={() => changeMonth(1)}>
             <ChevronRight size={20} color={color.mutedForeground} />
           </PressableScale>
         </View>

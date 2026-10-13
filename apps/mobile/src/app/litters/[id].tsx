@@ -1,6 +1,5 @@
 import { useQuery } from "@powersync/react-native";
 import { litterStage, saleableDate } from "@sowcycle/core";
-import * as Haptics from "expo-haptics";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
@@ -11,6 +10,7 @@ import { useOnline } from "../../db/useOnline";
 import { thaiDate } from "../../lib/date";
 import { LITTER_STAGE_LABEL } from "../../lib/litterLabels";
 import { Text } from "../../theme";
+import { haptic } from "../../lib/haptics";
 
 type LitterDetail = {
   sow_name: string;
@@ -44,9 +44,10 @@ export default function LitterSheet() {
     setError(null);
     try {
       await write();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptic.success();
       router.back();
     } catch (e) {
+      haptic.error();
       setError(saveErrorMessage(e));
       setBusy(false);
     }
