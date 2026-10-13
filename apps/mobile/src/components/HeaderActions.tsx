@@ -88,7 +88,7 @@ function SearchDrawer(props: SearchConfig & { open: boolean; onClose: () => void
   const [query, setQuery] = useState("");
   const pending = useRef<(() => void) | null>(null);
   const q = query.trim().toLowerCase();
-  const matches = q ? props.items.filter((item) => `${item.title} ${item.subtitle ?? ""}`.toLowerCase().includes(q)) : [];
+  const matches = q ? props.items.filter((item) => `${item.title} ${item.subtitle ?? ""}`.toLowerCase().includes(q)) : props.items;
 
   return (
     <Drawer
@@ -104,8 +104,7 @@ function SearchDrawer(props: SearchConfig & { open: boolean; onClose: () => void
     >
       <SearchBar value={query} onChange={setQuery} placeholder={props.placeholder} autoFocus />
       <ScrollView style={[s.list, { flex: 1 }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-        {!q && <EmptyText>พิมพ์เพื่อค้นหา</EmptyText>}
-        {q && matches.length === 0 && <EmptyText>{props.emptyText}</EmptyText>}
+        {matches.length === 0 && <EmptyText>{props.emptyText}</EmptyText>}
         {matches.map((item) => (
           <Pressable
             key={item.key}
