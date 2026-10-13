@@ -1,6 +1,5 @@
 import { useQuery } from "@powersync/react-native";
 import { expectedFarrowDate, newBreedingFormSchema } from "@sowcycle/core";
-import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -10,6 +9,7 @@ import { recordBreeding, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { thaiDate } from "../../../lib/date";
 import { Text } from "../../../theme";
+import { haptic } from "../../../lib/haptics";
 
 export default function BreedSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,9 +31,10 @@ export default function BreedSheet() {
     setError(null);
     try {
       await recordBreeding({ sowId: id, boarId, breedDate });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptic.success();
       router.back();
     } catch (e) {
+      haptic.error();
       setError(saveErrorMessage(e));
       setBusy(false);
     }

@@ -1,5 +1,4 @@
 import { useQuery } from "@powersync/react-native";
-import * as Haptics from "expo-haptics";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet } from "react-native";
@@ -8,6 +7,7 @@ import { SubmitButton } from "../../components/Form";
 import { createBoar, deleteBoar, saveErrorMessage, updateBoar } from "../../db/mutations";
 import { useOnline } from "../../db/useOnline";
 import { Text, TextInput } from "../../theme";
+import { haptic } from "../../lib/haptics";
 
 type BoarDetail = { breed: string; description: string | null; breedings: number; litters: number };
 
@@ -40,9 +40,10 @@ function BoarForm({ id, isNew, boar }: { id: string; isNew: boolean; boar: BoarD
     setError(null);
     try {
       await write();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptic.success();
       router.back();
     } catch (e) {
+      haptic.error();
       setError(saveErrorMessage(e, retrySafe));
       setBusy(false);
     }

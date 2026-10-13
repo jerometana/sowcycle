@@ -1,10 +1,10 @@
 import type { LucideIcon } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import { useEffect, useState, type ReactNode } from "react";
 import { ActivityIndicator, Animated, Pressable, StyleSheet, useAnimatedValue, View, type StyleProp, type ViewStyle } from "react-native";
 import { ChevronRight, Dna, Search } from "../theme/icons";
 import { color, Text, TextInput } from "../theme";
 import { PressableScale } from "./motion";
+import { haptic } from "../lib/haptics";
 
 export function Card(props: { children: ReactNode; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
   if (!props.onPress) return <View style={[s.card, props.style]}>{props.children}</View>;
@@ -76,7 +76,10 @@ export function Button(props: {
   const Icon = props.icon;
   return (
     <PressableScale
-      onPress={props.onPress}
+      onPress={() => {
+        haptic.tap();
+        props.onPress();
+      }}
       disabled={props.disabled || props.busy}
       style={({ pressed }) => [
         s.button,
@@ -137,7 +140,7 @@ export function Segmented<T extends string>(props: { options: { value: T; label:
             key={o.value}
             onPress={() => {
               if (selected) return;
-              Haptics.selectionAsync();
+              haptic.select();
               props.onChange(o.value);
             }}
             style={s.segItem}

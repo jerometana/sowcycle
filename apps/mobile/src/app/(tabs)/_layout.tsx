@@ -6,6 +6,7 @@ import { AccountDrawer } from "../../components/AccountDrawer";
 import { PressableScale } from "../../components/motion";
 import { color, fonts } from "../../theme";
 import { Calendar, Fence, House, PiggyBank, Syringe, User } from "../../theme/icons";
+import { haptic } from "../../lib/haptics";
 
 function AccountButton() {
   const [open, setOpen] = useState(false);
@@ -14,7 +15,10 @@ function AccountButton() {
       <PressableScale
         hitSlop={8}
         accessibilityLabel="บัญชี"
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          haptic.tap();
+          setOpen(true);
+        }}
         style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center", marginRight: 16 }}
       >
         <User size={20} color={color.gray600} />
@@ -49,6 +53,7 @@ const tabIcon = (icon: LucideIcon) =>
 export default function TabsLayout() {
   return (
     <Tabs
+      screenListeners={{ tabPress: () => haptic.select() }}
       screenOptions={{
         tabBarActiveTintColor: color.primary,
         tabBarInactiveTintColor: color.gray600,

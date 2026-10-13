@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Animated, Pressable, StyleSheet, useAnimatedValue, View } from "react-native";
 import { Text } from "../theme";
 import { motion, useReducedMotion } from "./motion";
+import { haptic } from "../lib/haptics";
 
 export type ChartPoint = { key: string; label: string; value: number };
 
@@ -51,7 +52,10 @@ export function ColumnChart(props: { title: string; unit: string; points: ChartP
               <Pressable
                 key={p.key}
                 style={s.slot}
-                onPress={() => setSelected(isSelected ? null : p.key)}
+                onPress={() => {
+                  haptic.select();
+                  setSelected(isSelected ? null : p.key);
+                }}
                 hitSlop={8}
               >
                 {labelled.has(p.key) && <Text style={[s.value, isSelected && s.valueSelected]}>{format(p.value)}</Text>}

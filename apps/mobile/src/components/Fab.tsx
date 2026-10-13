@@ -3,6 +3,7 @@ import { Animated, StyleSheet, useAnimatedValue } from "react-native";
 import { color } from "../theme";
 import { Plus } from "../theme/icons";
 import { PressableScale } from "./motion";
+import { haptic } from "../lib/haptics";
 
 export function Fab(props: { onPress: () => void; label: string }) {
   const pop = useAnimatedValue(0.6);
@@ -14,7 +15,10 @@ export function Fab(props: { onPress: () => void; label: string }) {
     <Animated.View style={[s.fab, { transform: [{ scale: pop }] }]}>
       <PressableScale
         accessibilityLabel={props.label}
-        onPress={props.onPress}
+        onPress={() => {
+          haptic.tap();
+          props.onPress();
+        }}
         style={({ pressed }) => [s.hit, pressed && { opacity: 0.85 }]}
       >
         <Plus size={28} color={color.primaryForeground} />

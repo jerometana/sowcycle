@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { color, Text } from "../theme";
 import { useReducedMotion } from "./motion";
 import { Button } from "./ui";
+import { haptic } from "../lib/haptics";
 
 const DISMISS_DISTANCE = 80;
 const CLOSE_MS = 220;
@@ -91,6 +92,7 @@ export function useConfirm() {
   );
 
   const confirm = (next: ConfirmOptions) => {
+    haptic.warning();
     setOptions(next);
     setOpen(true);
   };
