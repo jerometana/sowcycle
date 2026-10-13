@@ -1,9 +1,21 @@
 import type { LucideIcon } from "lucide-react-native";
-import { useState, type ReactNode } from "react";
-import { Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View, type GestureResponderEvent } from "react-native";
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  Animated,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  useAnimatedValue,
+  useWindowDimensions,
+  View,
+  type GestureResponderEvent,
+  type ViewStyle,
+} from "react-native";
 import { haptic } from "../lib/haptics";
 import { color, Text } from "../theme";
 import { Check, ChevronDown } from "../theme/icons";
+import { useReducedMotion } from "./motion";
 
 export type MenuItem = { key: string; label: string; icon?: LucideIcon; selected?: boolean; onPress: () => void };
 
@@ -41,7 +53,7 @@ export function Menu(props: {
       <Modal visible={!!anchor} transparent animationType="fade" onRequestClose={() => setAnchor(null)} onDismiss={runPending} statusBarTranslucent>
         <Pressable style={StyleSheet.absoluteFill} onPress={() => setAnchor(null)} accessibilityLabel="ปิดตัวเลือก" />
         {anchor && (
-          <View style={[s.menu, anchor]}>
+          <MenuPanel anchor={anchor} origin={props.align === "right" ? "top right" : "top left"}>
             {props.items.map((item, i) => {
               const Icon = item.icon;
               return (
@@ -58,10 +70,25 @@ export function Menu(props: {
                 </Pressable>
               );
             })}
-          </View>
+          </MenuPanel>
         )}
       </Modal>
     </>
+  );
+}
+
+// Grows out of the corner nearest its trigger, so the menu reads as coming from what was tapped.
+function MenuPanel(props: { anchor: ViewStyle; origin: string; children: ReactNode }) {
+  const reduced = useReducedMotion();
+  const pop = useAnimatedValue(reduced ? 1 : 0);
+  useEffect(() => {
+    if (!reduced) Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 24, bounciness: 4 }).start();
+  }, [pop, reduced]);
+  const scale = pop.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] });
+  return (
+    <Animated.View style={[s.menu, props.anchor, { opacity: pop, transformOrigin: props.origin, transform: [{ scale }] }]}>
+      {props.children}
+    </Animated.View>
   );
 }
 

@@ -6,7 +6,7 @@ import { color, Text } from "../theme";
 import { Check, ChevronDown, ChevronRight, Ellipsis, ListFilter, Plus, Search } from "../theme/icons";
 import { AccountDrawer } from "./AccountDrawer";
 import { Drawer } from "./Drawer";
-import { PressableScale } from "./motion";
+import { FadeIn, PressableScale } from "./motion";
 import { EmptyText, SearchBar } from "./ui";
 
 // The header's right side: the search button, the screen's add button, and the account button on หน้าหลัก.
@@ -145,12 +145,12 @@ function SearchDrawer(props: { open: boolean; onClose: () => void; search: Searc
       </View>
       <View style={s.body}>
         {expanded && <Pressable style={[StyleSheet.absoluteFill, { zIndex: 5 }]} onPress={() => setExpanded(null)} accessibilityLabel="ปิดตัวเลือก" />}
-        {showFilters && props.filters.map((g) => {
+        {showFilters && props.filters.map((g, i) => {
           const isOpen = g.key === expanded;
           const active = g.value !== g.defaultValue;
           const current = g.options.find((o) => o.key === g.value)?.label ?? "";
           return (
-            <View key={g.key} style={s.filterRow}>
+            <FadeIn key={g.key} index={i} style={s.filterRow}>
               <Text style={s.filterLabel}>{g.label}</Text>
               <Pressable
                 accessibilityRole="button"
@@ -167,7 +167,7 @@ function SearchDrawer(props: { open: boolean; onClose: () => void; search: Searc
                 </Text>
                 <ChevronDown size={18} color={color.mutedForeground} style={isOpen && { transform: [{ rotate: "180deg" }] }} />
               </Pressable>
-            </View>
+            </FadeIn>
           );
         })}
         <ScrollView style={s.results} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">

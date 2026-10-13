@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { DateField } from "../../../components/DateField";
 import { Drawer } from "../../../components/Drawer";
 import { NumberField, SubmitButton } from "../../../components/Form";
+import { FadeIn } from "../../../components/motion";
 import { Button, InfoRow } from "../../../components/ui";
 import { recordSale, saveErrorMessage, startFattening } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
@@ -55,50 +56,54 @@ export default function LitterSheet() {
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={s.content}>
       <Stack.Screen options={{ title: `ครอกของ ${litter.sow_name}` }} />
 
-      {age !== null && <InfoRow icon={Clock} label="อายุ">{`${age} วัน`}</InfoRow>}
-      <InfoRow icon={List} label="สถานะ">
-        <Text style={[s.badge, { backgroundColor: LITTER_STAGE_LABEL[stage].color }]}>{LITTER_STAGE_LABEL[stage].text}</Text>
-      </InfoRow>
-      <InfoRow icon={PiggyBank} label="จำนวน">
-        <View style={s.row}>
-          <Text style={s.value}>{`${litter.piglets_born_count ?? 0} ตัว`}</Text>
-          <Text style={[s.chip, { backgroundColor: color.blue }]}>{`ผู้ ${litter.piglets_male_born_alive ?? 0}`}</Text>
-          <Text style={[s.chip, { backgroundColor: color.primary }]}>{`เมีย ${litter.piglets_female_born_alive ?? 0}`}</Text>
-        </View>
-      </InfoRow>
-      {stage === "sold" && (litter.avg_weight ?? 0) > 0 && (
-        <InfoRow icon={Gauge} label="น้ำหนักขายเฉลี่ย">{`${litter.avg_weight} kg`}</InfoRow>
-      )}
-
-      <Pressable
-        onPress={() => router.replace({ pathname: "/sows/[id]", params: { id: litter.sow_id } })}
-        style={({ pressed }) => [s.linkRow, pressed && { opacity: 0.7 }]}
-      >
-        <View style={{ flex: 1 }}>
-          <InfoRow icon={PiggyBank} label="แม่พันธุ์">
-            {litter.sow_name}
-          </InfoRow>
-        </View>
-        <ChevronRight size={20} color={color.mutedForeground} />
-      </Pressable>
-      {litter.boar_breed && (
-        <InfoRow icon={Dna} label="พ่อพันธุ์">
-          {litter.boar_breed}
+      <FadeIn style={{ gap: 16 }}>
+        {age !== null && <InfoRow icon={Clock} label="อายุ">{`${age} วัน`}</InfoRow>}
+        <InfoRow icon={List} label="สถานะ">
+          <Text style={[s.badge, { backgroundColor: LITTER_STAGE_LABEL[stage].color }]}>{LITTER_STAGE_LABEL[stage].text}</Text>
         </InfoRow>
-      )}
-
-      <View style={s.timeline}>
-        {stage !== "nursing" && <View style={s.timelineLine} />}
-        <TimelineRow icon={Cake} label="คลอดเมื่อ" value={date(litter.birth_date)} />
-        {stage !== "nursing" && <TimelineRow icon={Beef} label="เริ่มขุนเมื่อ" value={date(litter.fattening_at)} />}
-        {stage !== "nursing" && (
-          <TimelineRow
-            icon={Banknote}
-            label={stage === "sold" ? "ขายแล้วเมื่อ" : "กำหนดขาย"}
-            value={date(stage === "sold" ? litter.sold_at : litter.saleable_at)}
-          />
+        <InfoRow icon={PiggyBank} label="จำนวน">
+          <View style={s.row}>
+            <Text style={s.value}>{`${litter.piglets_born_count ?? 0} ตัว`}</Text>
+            <Text style={[s.chip, { backgroundColor: color.blue }]}>{`ผู้ ${litter.piglets_male_born_alive ?? 0}`}</Text>
+            <Text style={[s.chip, { backgroundColor: color.primary }]}>{`เมีย ${litter.piglets_female_born_alive ?? 0}`}</Text>
+          </View>
+        </InfoRow>
+        {stage === "sold" && (litter.avg_weight ?? 0) > 0 && (
+          <InfoRow icon={Gauge} label="น้ำหนักขายเฉลี่ย">{`${litter.avg_weight} kg`}</InfoRow>
         )}
-      </View>
+
+        <Pressable
+          onPress={() => router.replace({ pathname: "/sows/[id]", params: { id: litter.sow_id } })}
+          style={({ pressed }) => [s.linkRow, pressed && { opacity: 0.7 }]}
+        >
+          <View style={{ flex: 1 }}>
+            <InfoRow icon={PiggyBank} label="แม่พันธุ์">
+              {litter.sow_name}
+            </InfoRow>
+          </View>
+          <ChevronRight size={20} color={color.mutedForeground} />
+        </Pressable>
+        {litter.boar_breed && (
+          <InfoRow icon={Dna} label="พ่อพันธุ์">
+            {litter.boar_breed}
+          </InfoRow>
+        )}
+      </FadeIn>
+
+      <FadeIn index={2}>
+        <View style={s.timeline}>
+          {stage !== "nursing" && <View style={s.timelineLine} />}
+          <TimelineRow icon={Cake} label="คลอดเมื่อ" value={date(litter.birth_date)} />
+          {stage !== "nursing" && <TimelineRow icon={Beef} label="เริ่มขุนเมื่อ" value={date(litter.fattening_at)} />}
+          {stage !== "nursing" && (
+            <TimelineRow
+              icon={Banknote}
+              label={stage === "sold" ? "ขายแล้วเมื่อ" : "กำหนดขาย"}
+              value={date(stage === "sold" ? litter.sold_at : litter.saleable_at)}
+            />
+          )}
+        </View>
+      </FadeIn>
 
       {stage === "nursing" && (
         <Button title="เพิ่มวันเริ่มขุน" icon={Plus} variant="secondary" disabled={!online} onPress={() => setAction("fattening")} />

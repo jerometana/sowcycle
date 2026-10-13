@@ -29,7 +29,7 @@ import {
   Syringe,
 } from "../../../theme/icons";
 import { haptic } from "../../../lib/haptics";
-import { PressableScale } from "../../../components/motion";
+import { FadeIn, PressableScale } from "../../../components/motion";
 
 type SowRow = { name: string; breasts_count: number | null; birth_date: string | null; add_date: string | null };
 
@@ -203,7 +203,11 @@ export default function SowDetail() {
         <>
           <ColumnChart title="จำนวนลูกมีชีวิตต่อครอก" unit="ตัว" points={piglets} />
           <ColumnChart title="น้ำหนักขายเฉลี่ยต่อครอก (กก.)" unit="กก." points={saleWeights} />
-          {piglets.length < 2 && saleWeights.length < 2 && <EmptyText>ยังมีข้อมูลไม่พอสำหรับกราฟ</EmptyText>}
+          {piglets.length < 2 && saleWeights.length < 2 && (
+            <FadeIn>
+              <EmptyText>ยังมีข้อมูลไม่พอสำหรับกราฟ</EmptyText>
+            </FadeIn>
+          )}
         </>
       )}
 
@@ -220,9 +224,11 @@ export default function SowDetail() {
           />
           {!online && <Text style={s.offline}>ออฟไลน์ ดูข้อมูลได้ แต่ต้องมีสัญญาณเพื่อบันทึก</Text>}
           {history.length === 0 && <EmptyText>ยังไม่มีประวัติ</EmptyText>}
-          {history.map((h) =>
-            h.kind === "breeding" ? <BreedingCard key={`b${h.b.id}`} breeding={h.b} number={h.n} /> : <TreatmentCard key={`t${h.t.id}`} treatment={h.t} />
-          )}
+          {history.map((h, i) => (
+            <FadeIn key={`${filter}:${h.kind === "breeding" ? `b${h.b.id}` : `t${h.t.id}`}`} index={i}>
+              {h.kind === "breeding" ? <BreedingCard breeding={h.b} number={h.n} /> : <TreatmentCard treatment={h.t} />}
+            </FadeIn>
+          ))}
         </>
       )}
     </ScrollView>
