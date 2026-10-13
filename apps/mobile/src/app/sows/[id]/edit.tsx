@@ -2,6 +2,7 @@ import { useQuery } from "@powersync/react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Switch, View } from "react-native";
+import { PressableScale } from "../../../components/motion";
 import { OptionalDateField } from "../../../components/DateField";
 import { DeleteButton, NumberField, SubmitButton } from "../../../components/Form";
 import { createSow, deleteSow, saveErrorMessage, updateSow, type SowInput } from "../../../db/mutations";
@@ -18,7 +19,10 @@ type SowDetail = {
   breedings: number;
   litters: number;
   treatments: number;
+  breed_ids: string | null;
 };
+
+type Breed = { id: string; breed: string };
 
 // id "new" adds a sow; any other id edits that sow.
 export default function SowSheet() {
@@ -28,7 +32,8 @@ export default function SowSheet() {
     `select name, breasts_count, birth_date, add_date, is_active,
        (select count(*) from breedings where sow_id = sows.id) as breedings,
        (select count(*) from litters where sow_id = sows.id) as litters,
-       (select count(*) from medical_records where sow_id = sows.id) as treatments
+       (select count(*) from medical_records where sow_id = sows.id) as treatments,
+       (select group_concat(breed_id) from sow_breeds where sow_id = sows.id) as breed_ids
      from sows where id = ?`,
     [id]
   );
@@ -45,6 +50,8 @@ function SowForm({ id, isNew, sow }: { id: string; isNew: boolean; sow: SowDetai
   const [birthDate, setBirthDate] = useState<Date | null>(sow?.birth_date ? new Date(sow.birth_date) : null);
   const [addDate, setAddDate] = useState<Date | null>(sow ? (sow.add_date ? new Date(sow.add_date) : null) : new Date());
   const [active, setActive] = useState(sow ? sow.is_active !== 0 : true);
+  const [breedIds, setBreedIds] = useState<string[]>(sow?.breed_ids ? sow.breed_ids.split(",") : []);
+  const { data: breeds } = useQuery<Breed>("select id, breed from boars order by breed");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +90,7 @@ function SowForm({ id, isNew, sow }: { id: string; isNew: boolean; sow: SowDetai
     setBusy(true);
     setError(null);
     try {
-      await (isNew ? createSow(input) : updateSow(id, input));
+      await (isNew ? createSow(input, breedIds) : updateSow(id, input, breedIds));
       haptic.success();
       router.back();
     } catch (e) {
@@ -98,6 +105,30 @@ function SowForm({ id, isNew, sow }: { id: string; isNew: boolean; sow: SowDetai
       <Stack.Screen options={{ title: isNew ? "เพิ่มแม่พันธุ์ใหม่" : "แก้ไขแม่พันธุ์" }} />
       <Text style={s.label}>ชื่อ</Text>
       <TextInput style={s.input} value={name} onChangeText={setName} placeholder="ชื่อแม่พันธุ์" autoCorrect={false} />
+      <Text style={s.label}>สายพันธุ์</Text>
+      {breeds.length === 0 ? (
+        <Text style={s.hint}>ยังไม่มีสายพันธุ์ เพิ่มได้ที่หน้าสายพันธุ์</Text>
+      ) : (
+        <View style={s.chips}>
+          {breeds.map((b) => {
+            const selected = breedIds.includes(b.id);
+            return (
+              <PressableScale
+                key={b.id}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                onPress={() => {
+                  haptic.select();
+                  setBreedIds(selected ? breedIds.filter((x) => x !== b.id) : [...breedIds, b.id]);
+                }}
+                style={[s.chip, selected && s.chipSelected]}
+              >
+                <Text style={[s.chipText, selected && s.chipTextSelected]}>{b.breed}</Text>
+              </PressableScale>
+            );
+          })}
+        </View>
+      )}
       <NumberField label="จำนวนเต้านม" value={breasts} onChange={setBreasts} />
       <OptionalDateField label="วันเกิด" value={birthDate} onChange={setBirthDate} />
       <OptionalDateField label="รับเข้าเมื่อ" value={addDate} onChange={setAddDate} />
@@ -133,6 +164,12 @@ const s = StyleSheet.create({
   content: { padding: 20, gap: 8 },
   label: { fontSize: 16, marginTop: 8 },
   input: { backgroundColor: "#f5f5f4", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
+  hint: { color: color.mutedForeground },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: color.border, backgroundColor: color.card },
+  chipSelected: { borderColor: color.primary, backgroundColor: "#fdf2f8" },
+  chipText: { fontSize: 16 },
+  chipTextSelected: { color: color.primary, fontWeight: "600" },
   switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8 },
   switchLabel: { fontSize: 16 },
   error: { color: "#dc2626", textAlign: "center", marginTop: 8 },

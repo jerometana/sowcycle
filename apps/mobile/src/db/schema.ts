@@ -13,6 +13,13 @@ export const AppSchema = new Schema({
     breed: column.text,
     description: column.text,
   }),
+  sow_breeds: new Table(
+    {
+      sow_id: column.text,
+      breed_id: column.text,
+    },
+    { indexes: { sow: ["sow_id"] } }
+  ),
   medicines: new Table({
     title: column.text,
     description: column.text,

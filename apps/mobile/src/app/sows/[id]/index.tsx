@@ -9,6 +9,7 @@ import { Dropdown, Menu } from "../../../components/Dropdown";
 import { useConfirm } from "../../../components/Drawer";
 import { Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../../components/ui";
 import { deleteTreatment, saveErrorMessage } from "../../../db/mutations";
+import { SOW_BREEDS } from "../../../db/sowCards";
 import { useOnline } from "../../../db/useOnline";
 import { thaiDate, thaiDateLong, thaiMonthYear } from "../../../lib/date";
 import { color, Text } from "../../../theme";
@@ -31,7 +32,7 @@ import {
 import { haptic } from "../../../lib/haptics";
 import { FadeIn, PressableScale } from "../../../components/motion";
 
-type SowRow = { name: string; breasts_count: number | null; birth_date: string | null; add_date: string | null };
+type SowRow = { name: string; breasts_count: number | null; birth_date: string | null; add_date: string | null; breeds: string | null };
 
 type BreedingRow = {
   id: string;
@@ -91,7 +92,10 @@ export default function SowDetail() {
   const online = useOnline();
   const [tab, setTab] = useState<Tab>("history");
   const [filter, setFilter] = useState<HistoryFilter>("all");
-  const { data: sows } = useQuery<SowRow>("select name, breasts_count, birth_date, add_date from sows where id = ?", [id]);
+  const { data: sows } = useQuery<SowRow>(
+    `select s.name, s.breasts_count, s.birth_date, s.add_date, ${SOW_BREEDS} as breeds from sows s where s.id = ?`,
+    [id]
+  );
   const { data: breedings } = useQuery<BreedingRow>(BREEDINGS, [id]);
   const { data: treatments } = useQuery<TreatmentRow>(TREATMENTS, [id]);
   const { data: litters } = useQuery<SoldLitterRow>("select id, sold_at, avg_weight from litters where sow_id = ?", [id]);
@@ -99,7 +103,6 @@ export default function SowDetail() {
   const piglets = pigletPoints(breedings);
   const saleWeights = saleWeightPoints(litters);
   const openPregnancy = breedings.find((b) => stageOf(b) === "pregnant");
-  const breed = breedings.find((b) => b.boar_breed)?.boar_breed;
 
   const history = [
     ...(filter !== "treatments" ? breedings.map((b, i) => ({ kind: "breeding" as const, date: b.breed_date, b, n: breedings.length - i })) : []),
@@ -125,25 +128,6 @@ export default function SowDetail() {
         options={{
           title: "",
           headerRight: () => (
-            <Menu
-              align="right"
-              items={addActions.map((a) => ({ key: a.title, label: a.title, icon: a.icon, onPress: a.go }))}
-              renderTrigger={(open) => (
-                <PressableScale hitSlop={8} accessibilityLabel="เพิ่มประวัติ" disabled={!online} onPress={open} style={s.headerIcon}>
-                  <Plus size={24} color={online ? color.primary : color.mutedForeground} />
-                </PressableScale>
-              )}
-            />
-          ),
-        }}
-      />
-
-      {sow && (
-        <Card>
-          <View style={s.nameRow}>
-            <Text style={s.name} numberOfLines={2}>
-              {sow.name}
-            </Text>
             <PressableScale
               hitSlop={8}
               accessibilityLabel="แก้ไขแม่พันธุ์"
@@ -151,11 +135,19 @@ export default function SowDetail() {
                 haptic.tap();
                 router.push({ pathname: "/sows/[id]/edit", params: { id } });
               }}
-              style={s.roundButton}
+              style={s.headerIcon}
             >
-              <Pencil size={18} color={color.gray600} />
+              <Pencil size={22} color={color.foreground} />
             </PressableScale>
-          </View>
+          ),
+        }}
+      />
+
+      {sow && (
+        <Card>
+          <Text style={s.name} numberOfLines={2}>
+            {sow.name}
+          </Text>
           <InfoRow icon={Heart} label="สถานะ" tint={openPregnancy ? color.primary : color.mutedForeground}>
             {openPregnancy ? (
               <View style={s.statusRow}>
@@ -175,14 +167,14 @@ export default function SowDetail() {
               <InfoRow icon={House} label="รับเข้าเมื่อ">{sow.add_date ? thaiDate(sow.add_date, true) : "-"}</InfoRow>
             </View>
           </View>
-          {breed && (
+          {sow.breeds && (
             <Pressable onPress={() => router.push("/boars")} style={s.breedBox}>
               <View style={s.whiteSquare}>
                 <Dna size={24} color={color.mutedForeground} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.label}>สายพันธุ์</Text>
-                <Text>{breed}</Text>
+                <Text>{sow.breeds}</Text>
               </View>
               <ChevronRight size={20} color={color.mutedForeground} />
             </Pressable>
@@ -213,15 +205,27 @@ export default function SowDetail() {
 
       {tab === "history" && (
         <>
-          <Dropdown
-            value={filter}
-            onChange={setFilter}
-            options={[
-              { key: "all", label: "ทั้งหมด" },
-              { key: "breedings", label: `การผสม (${breedings.length})` },
-              { key: "treatments", label: `การใช้ยา (${treatments.length})` },
-            ]}
-          />
+          <View style={s.historyBar}>
+            <Dropdown
+              value={filter}
+              onChange={setFilter}
+              options={[
+                { key: "all", label: "ทั้งหมด" },
+                { key: "breedings", label: `การผสม (${breedings.length})` },
+                { key: "treatments", label: `การใช้ยา (${treatments.length})` },
+              ]}
+            />
+            <Menu
+              align="right"
+              items={addActions.map((a) => ({ key: a.title, label: a.title, icon: a.icon, onPress: a.go }))}
+              renderTrigger={(open) => (
+                <PressableScale hitSlop={8} accessibilityLabel="เพิ่มประวัติ" disabled={!online} onPress={open} style={[s.addButton, !online && s.addButtonOffline]}>
+                  <Plus size={18} color={online ? color.primaryForeground : color.mutedForeground} />
+                  <Text style={[s.addLabel, !online && { color: color.mutedForeground }]}>เพิ่ม</Text>
+                </PressableScale>
+              )}
+            />
+          </View>
           {!online && <Text style={s.offline}>ออฟไลน์ ดูข้อมูลได้ แต่ต้องมีสัญญาณเพื่อบันทึก</Text>}
           {history.length === 0 && <EmptyText>ยังไม่มีประวัติ</EmptyText>}
           {history.map((h, i) => (
@@ -351,10 +355,21 @@ function TreatmentCard({ treatment: t }: { treatment: TreatmentRow }) {
 const s = StyleSheet.create({
   // iOS draws the glass circle around header items itself, like the back button; only the icon is ours.
   headerIcon: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  roundButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center" },
   pairRow: { flexDirection: "row", gap: 12 },
-  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  name: { flex: 1, fontSize: 26, fontWeight: "700", color: color.foreground },
+  historyBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingLeft: 12,
+    paddingRight: 16,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: color.primary,
+  },
+  addButtonOffline: { backgroundColor: color.muted },
+  addLabel: { fontSize: 16, fontWeight: "600", color: color.primaryForeground },
+  name: { fontSize: 26, fontWeight: "700", color: color.foreground },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   value: { fontSize: 16, fontWeight: "600", color: color.gray900 },
   badge: { backgroundColor: color.primary, color: color.primaryForeground, fontSize: 13, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 999, overflow: "hidden" },
