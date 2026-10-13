@@ -6,6 +6,7 @@ import { Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../c
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Activity, Syringe } from "../../theme/icons";
+import { FAB_CLEARANCE } from "../../components/Fab";
 import { FadeIn } from "../../components/motion";
 import { differenceInCalendarDays } from "date-fns";
 import { matchesQuery, useHeaderTools, type FilterGroup } from "../../components/HeaderActions";
@@ -90,7 +91,7 @@ export default function Medicines() {
           },
         ];
 
-  const { query, searchBar, drawers } = useHeaderTools({
+  const { query, searchBar, overlays } = useHeaderTools({
     add: { label: "เพิ่มยา", onPress: () => router.push({ pathname: "/medicines/[id]", params: { id: "new" } }) },
     filters,
     search: { placeholder: tab === "stock" ? "ค้นหาด้วยชื่อยาหรือวัคซีน" : "ค้นหาด้วยชื่อแม่พันธุ์หรือยา" },
@@ -121,11 +122,10 @@ export default function Medicines() {
 
   return (
     <View style={screen.root}>
-      {drawers}
       {tab === "stock" ? (
         <FlatList
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={screen.content}
+          contentContainerStyle={[screen.content, { paddingBottom: FAB_CLEARANCE }]}
           data={shownMedicines}
           keyExtractor={(m) => m.id}
           keyboardShouldPersistTaps="handled"
@@ -152,7 +152,7 @@ export default function Medicines() {
       ) : (
         <FlatList
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={screen.content}
+          contentContainerStyle={[screen.content, { paddingBottom: FAB_CLEARANCE }]}
           data={shownUsage}
           keyExtractor={(u) => u.id}
           keyboardShouldPersistTaps="handled"
@@ -168,6 +168,7 @@ export default function Medicines() {
           )}
         />
       )}
+      {overlays}
     </View>
   );
 }

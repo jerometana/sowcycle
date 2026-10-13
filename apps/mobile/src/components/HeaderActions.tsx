@@ -1,21 +1,21 @@
 import { useNavigation } from "expo-router";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { haptic } from "../lib/haptics";
 import { color, Text } from "../theme";
-import { Check, ChevronDown, Ellipsis, ListFilter, Plus, Search } from "../theme/icons";
+import { Check, ChevronDown, Ellipsis, ListFilter, Search } from "../theme/icons";
 import { AccountDrawer } from "./AccountDrawer";
 import { Drawer } from "./Drawer";
+import { Fab } from "./Fab";
 import { FadeIn, PressableScale } from "./motion";
 import { SearchBar } from "./ui";
 
-// The header's right side: search, filter, the screen's add button, and the account button on หน้าหลัก.
+// The header's right side: search and filter, and the account button on หน้าหลัก.
 export function HeaderActions(props: {
   onSearch?: () => void;
   searchActive?: boolean;
   onFilter?: () => void;
   filterActive?: boolean;
-  add?: { label: string; onPress: () => void };
   account?: boolean;
 }) {
   const [accountOpen, setAccountOpen] = useState(false);
@@ -51,11 +51,6 @@ export function HeaderActions(props: {
           )}
         </View>
       )}
-      {props.add && (
-        <PressableScale hitSlop={8} accessibilityLabel={props.add.label} onPress={press(props.add.onPress)} style={[s.button, s.buttonPrimary]}>
-          <Plus size={22} color={color.primaryForeground} />
-        </PressableScale>
-      )}
       {props.account && (
         <>
           <PressableScale hitSlop={8} accessibilityLabel="บัญชี" onPress={press(() => setAccountOpen(true))} style={s.button}>
@@ -83,8 +78,8 @@ export const matchesQuery = (query: string, ...texts: (string | null | undefined
   return !q || texts.some((t) => t?.toLowerCase().includes(q));
 };
 
-// Puts search, filter and add buttons in the screen's header. Search opens a field the screen renders above its
-// list and filters that list in place by `query`; filter opens a drawer of the screen's filter groups.
+// Puts search and filter buttons in the screen's header, and the add action in a FAB. Search opens a field the screen
+// renders above its list and filters that list in place by `query`; filter opens a drawer of the screen's filter groups.
 export function useHeaderTools(tools: { search: SearchConfig; filters?: FilterGroup[]; add?: { label: string; onPress: () => void } }) {
   const navigation = useNavigation();
   const [searching, setSearching] = useState(false);
@@ -93,12 +88,6 @@ export function useHeaderTools(tools: { search: SearchConfig; filters?: FilterGr
   const filters = tools.filters ?? [];
   const hasFilters = filters.length > 0;
   const filterActive = filters.some((group) => group.value !== group.defaultValue);
-  const addLabel = tools.add?.label;
-  const addPress = useRef(tools.add?.onPress);
-  useLayoutEffect(() => {
-    addPress.current = tools.add?.onPress;
-  });
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -107,11 +96,10 @@ export function useHeaderTools(tools: { search: SearchConfig; filters?: FilterGr
           searchActive={searching}
           onFilter={hasFilters ? () => setFilterOpen(true) : undefined}
           filterActive={filterActive}
-          add={addLabel ? { label: addLabel, onPress: () => addPress.current?.() } : undefined}
         />
       ),
     });
-  }, [navigation, searching, hasFilters, filterActive, addLabel]);
+  }, [navigation, searching, hasFilters, filterActive]);
 
   const searchBar = searching ? (
     <FadeIn style={s.searchRow}>
@@ -131,9 +119,14 @@ export function useHeaderTools(tools: { search: SearchConfig; filters?: FilterGr
     </FadeIn>
   ) : null;
 
-  const drawers = hasFilters ? <FilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} filters={filters} /> : null;
+  const overlays = (
+    <>
+      {hasFilters && <FilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} filters={filters} />}
+      {tools.add && <Fab label={tools.add.label} onPress={tools.add.onPress} />}
+    </>
+  );
 
-  return { query: searching ? query : "", searchBar, drawers };
+  return { query: searching ? query : "", searchBar, overlays };
 }
 
 const DROPDOWN_HEIGHT = 48;
@@ -225,7 +218,6 @@ const s = StyleSheet.create({
   pill: { flexDirection: "row", alignItems: "center", height: 40, paddingHorizontal: 4, borderRadius: 20, backgroundColor: "#e5e5e5" },
   pillHalf: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   pillHalfActive: { backgroundColor: "#fce7f3" },
-  buttonPrimary: { backgroundColor: color.primary },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   cancel: { fontSize: 16, fontWeight: "600", color: color.primary },
   body: { flex: 1, gap: ROW_GAP },

@@ -10,6 +10,7 @@ import { color, Text } from "../../theme";
 import { Cake, Calendar, Check, PiggyBank, Plus } from "../../theme/icons";
 import { FadeIn } from "../../components/motion";
 import { matchesQuery, useHeaderTools } from "../../components/HeaderActions";
+import { SummaryCards } from "../../components/SummaryCards";
 
 type LitterRow = {
   id: string;
@@ -43,6 +44,12 @@ const LITTER_FILTERS = {
 } as const;
 type LitterFilter = keyof typeof LITTER_FILTERS;
 
+// Shortcut cards over the list. ทั้งหมด counts the unsold litters, the default ยังไม่ขาย view.
+const SUMMARY: { key: LitterFilter; label: string; tint: string }[] = [
+  { key: "unsold", label: "ทั้งหมด", tint: color.foreground },
+  { key: "fattening", label: "กำลังขุน", tint: color.primary },
+];
+
 export default function Litters() {
   const [filter, setFilter] = useState<LitterFilter>("unsold");
   const { data } = useQuery<LitterRow>(LITTERS);
@@ -50,7 +57,7 @@ export default function Litters() {
   const breeds = [...new Set(data.map((l) => l.breed).filter((b): b is string => !!b))].sort((a, b) => a.localeCompare(b, "th"));
   // A breed whose last litter was deleted falls back to all, rather than leaving an empty list behind a blank filter.
   const breed = breeds.includes(chosenBreed) ? chosenBreed : ALL_BREEDS;
-  const { query, searchBar, drawers } = useHeaderTools({
+  const { query, searchBar, overlays } = useHeaderTools({
     filters: [
       {
         key: "stage",
@@ -80,7 +87,7 @@ export default function Litters() {
 
   return (
     <>
-      {drawers}
+      {overlays}
       <FlatList
       contentInsetAdjustmentBehavior="automatic"
       style={screen.root}
@@ -88,7 +95,17 @@ export default function Litters() {
       data={litters}
       keyExtractor={(l) => l.id}
       keyboardShouldPersistTaps="handled"
-      ListHeaderComponent={searchBar}
+      ListHeaderComponent={
+        <View style={{ gap: 12 }}>
+          {searchBar}
+          <SummaryCards
+            unit="ครอก"
+            selected={filter}
+            onSelect={(key) => setFilter(key as LitterFilter)}
+            cards={SUMMARY.map((card) => ({ ...card, count: data.filter((l) => LITTER_FILTERS[card.key].test(litterStage(l))).length }))}
+          />
+        </View>
+      }
       ListEmptyComponent={<EmptyText>{query ? "ไม่พบครอก" : data.length ? "ไม่มีครอกตามตัวกรองนี้" : "ไม่มีครอก"}</EmptyText>}
       renderItem={({ item, index }) => (
         <FadeIn index={index}>
