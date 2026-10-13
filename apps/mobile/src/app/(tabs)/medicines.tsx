@@ -8,7 +8,7 @@ import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Activity, Syringe } from "../../theme/icons";
 import { FadeIn } from "../../components/motion";
-import { useHeaderSearch } from "../../components/HeaderActions";
+import { useHeaderTools } from "../../components/HeaderActions";
 
 type MedicineRow = { id: string; title: string; description: string | null; stock_count: number | null; uses: number };
 type UsageRow = { id: string; sow_id: string; sow_name: string; medicine: string | null; used_at: string; symptoms: string | null };
@@ -29,29 +29,30 @@ export default function Medicines() {
   const [tab, setTab] = useState<Tab>("stock");
   const { data: medicines } = useQuery<MedicineRow>(MEDICINES);
   const { data: usage } = useQuery<UsageRow>(USAGE);
-  const search = useHeaderSearch(
-    tab === "stock"
-      ? {
-          placeholder: "ค้นหาด้วยชื่อยาหรือวัคซีน",
-          emptyText: "ไม่พบยาหรือวัคซีน",
-          items: medicines.map((m) => ({
-            key: m.id,
-            title: m.title,
-            subtitle: m.description ?? undefined,
-            onPress: () => router.push({ pathname: "/medicines/[id]", params: { id: m.id } }),
-          })),
-        }
-      : {
-          placeholder: "ค้นหาด้วยชื่อแม่พันธุ์หรือยา",
-          emptyText: "ไม่พบประวัติการใช้ยา",
-          items: usage.map((u) => ({
-            key: u.id,
-            title: u.medicine ?? "ไม่ระบุยา",
-            subtitle: `${u.sow_name} · ${thaiDateLong(u.used_at, true)}`,
-            onPress: () => router.push({ pathname: "/sows/[id]", params: { id: u.sow_id } }),
-          })),
-        }
-  );
+  const tools = useHeaderTools({
+    search:
+      tab === "stock"
+        ? {
+            placeholder: "ค้นหาด้วยชื่อยาหรือวัคซีน",
+            emptyText: "ไม่พบยาหรือวัคซีน",
+            items: medicines.map((m) => ({
+              key: m.id,
+              title: m.title,
+              subtitle: m.description ?? undefined,
+              onPress: () => router.push({ pathname: "/medicines/[id]", params: { id: m.id } }),
+            })),
+          }
+        : {
+            placeholder: "ค้นหาด้วยชื่อแม่พันธุ์หรือยา",
+            emptyText: "ไม่พบประวัติการใช้ยา",
+            items: usage.map((u) => ({
+              key: u.id,
+              title: u.medicine ?? "ไม่ระบุยา",
+              subtitle: `${u.sow_name} · ${thaiDateLong(u.used_at, true)}`,
+              onPress: () => router.push({ pathname: "/sows/[id]", params: { id: u.sow_id } }),
+            })),
+          },
+  });
 
   const header = (
     <View style={{ gap: 12 }}>
@@ -68,7 +69,7 @@ export default function Medicines() {
 
   return (
     <View style={screen.root}>
-      {search}
+      {tools}
       {tab === "stock" ? (
         <FlatList
           contentInsetAdjustmentBehavior="automatic"
