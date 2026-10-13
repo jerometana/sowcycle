@@ -2,10 +2,10 @@ import { useQuery } from "@powersync/react-native";
 import { breedingStage, countsTowardLitterStats, pregnancyCheckDates, type BreedingStage } from "@sowcycle/core";
 import { differenceInCalendarDays } from "date-fns";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ColumnChart, type ChartPoint } from "../../../components/ColumnChart";
-import { useConfirm } from "../../../components/Drawer";
+import { Drawer, useConfirm } from "../../../components/Drawer";
 import { Button, Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../../components/ui";
 import { deleteTreatment, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
@@ -90,6 +90,8 @@ export default function SowDetail() {
   const online = useOnline();
   const [tab, setTab] = useState<Tab>("details");
   const [filter, setFilter] = useState<HistoryFilter>("all");
+  const [addOpen, setAddOpen] = useState(false);
+  const pendingAdd = useRef<(() => void) | null>(null);
   const { data: sows } = useQuery<SowRow>("select name, breasts_count, birth_date, add_date from sows where id = ?", [id]);
   const { data: breedings } = useQuery<BreedingRow>(BREEDINGS, [id]);
   const { data: treatments } = useQuery<TreatmentRow>(TREATMENTS, [id]);
@@ -103,6 +105,19 @@ export default function SowDetail() {
     ...(filter !== "breedings" ? treatments.map((t) => ({ kind: "treatment" as const, date: t.used_at, t })) : []),
   ].sort((a, b) => b.date.localeCompare(a.date));
 
+  // The ways to add to this sow's history, shared by the header's add drawer and the history tab.
+  const addActions = [
+    openPregnancy
+      ? {
+          title: "บันทึกการคลอด",
+          icon: Check,
+          primary: true,
+          go: () => router.push({ pathname: "/sows/[id]/farrow", params: { id, breedingId: openPregnancy.id } }),
+        }
+      : { title: "เพิ่มประวัติผสม", icon: Plus, primary: false, go: () => router.push({ pathname: "/sows/[id]/breed", params: { id } }) },
+    { title: "บันทึกการใช้ยา", icon: Syringe, primary: false, go: () => router.push({ pathname: "/sows/[id]/treatment", params: { id } }) },
+  ];
+
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={screen.content}>
       <Stack.Screen
@@ -111,18 +126,44 @@ export default function SowDetail() {
           headerRight: () => (
             <PressableScale
               hitSlop={8}
-              accessibilityLabel="แก้ไขแม่พันธุ์"
+              accessibilityLabel="เพิ่มประวัติ"
               onPress={() => {
                 haptic.tap();
-                router.push({ pathname: "/sows/[id]/edit", params: { id } });
+                setAddOpen(true);
               }}
-              style={s.editButton}
+              style={[s.roundButton, { backgroundColor: color.primary }]}
             >
-              <Pencil size={18} color={color.gray600} />
+              <Plus size={22} color={color.primaryForeground} />
             </PressableScale>
           ),
         }}
       />
+      <Drawer
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onClosed={() => {
+          pendingAdd.current?.();
+          pendingAdd.current = null;
+        }}
+        title="เพิ่มประวัติ"
+      >
+        <View style={{ gap: 8 }}>
+          {addActions.map((a) => (
+            <Button
+              key={a.title}
+              title={a.title}
+              icon={a.icon}
+              variant={a.primary ? "primary" : "secondary"}
+              disabled={!online}
+              onPress={() => {
+                pendingAdd.current = a.go;
+                setAddOpen(false);
+              }}
+            />
+          ))}
+          {!online && <Text style={s.offline}>ต้องมีสัญญาณเพื่อบันทึก</Text>}
+        </View>
+      </Drawer>
       <Segmented
         value={tab}
         onChange={setTab}
@@ -135,6 +176,22 @@ export default function SowDetail() {
       {tab === "details" && sow && (
         <>
           <Card>
+            <View style={s.nameRow}>
+              <Text style={s.name} numberOfLines={2}>
+                {sow.name}
+              </Text>
+              <PressableScale
+                hitSlop={8}
+                accessibilityLabel="แก้ไขแม่พันธุ์"
+                onPress={() => {
+                  haptic.tap();
+                  router.push({ pathname: "/sows/[id]/edit", params: { id } });
+                }}
+                style={s.roundButton}
+              >
+                <Pencil size={18} color={color.gray600} />
+              </PressableScale>
+            </View>
             <InfoRow icon={Heart} label="สถานะ" tint={openPregnancy ? color.primary : color.mutedForeground}>
               {openPregnancy ? (
                 <View style={s.statusRow}>
@@ -183,17 +240,9 @@ export default function SowDetail() {
             ))}
           </View>
           <View style={{ gap: 8 }}>
-            {openPregnancy ? (
-              <Button
-                title="บันทึกการคลอด"
-                icon={Check}
-                disabled={!online}
-                onPress={() => router.push({ pathname: "/sows/[id]/farrow", params: { id, breedingId: openPregnancy.id } })}
-              />
-            ) : (
-              <Button title="เพิ่มประวัติผสม" icon={Plus} variant="surface" disabled={!online} onPress={() => router.push({ pathname: "/sows/[id]/breed", params: { id } })} />
-            )}
-            <Button title="บันทึกการใช้ยา" icon={Syringe} variant="surface" disabled={!online} onPress={() => router.push({ pathname: "/sows/[id]/treatment", params: { id } })} />
+            {addActions.map((a) => (
+              <Button key={a.title} title={a.title} icon={a.icon} variant={a.primary ? "primary" : "surface"} disabled={!online} onPress={a.go} />
+            ))}
             {!online && <Text style={s.offline}>ออฟไลน์ ดูข้อมูลได้ แต่ต้องมีสัญญาณเพื่อบันทึก</Text>}
           </View>
           {history.length === 0 && <EmptyText>ยังไม่มีประวัติ</EmptyText>}
@@ -320,7 +369,9 @@ function TreatmentCard({ treatment: t }: { treatment: TreatmentRow }) {
 }
 
 const s = StyleSheet.create({
-  editButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center" },
+  roundButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center" },
+  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  name: { flex: 1, fontSize: 26, fontWeight: "700", color: color.foreground },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   value: { fontSize: 16, fontWeight: "600", color: color.gray900 },
   badge: { backgroundColor: color.primary, color: color.primaryForeground, fontSize: 13, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 999, overflow: "hidden" },
