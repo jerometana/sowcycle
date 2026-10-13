@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, Easing, Modal, Pressable, StyleSheet, useAnimatedValue, useWindowDimensions, View, type GestureResponderEvent } from "react-native";
+import {
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  StyleSheet,
+  useAnimatedValue,
+  useWindowDimensions,
+  View,
+  type GestureResponderEvent,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { color, Text } from "../theme";
 import { useReducedMotion } from "./motion";
@@ -10,7 +20,16 @@ const DISMISS_DISTANCE = 80;
 const CLOSE_MS = 220;
 
 // Matches the web's vaul drawer: slides up from the bottom, drag the handle or title down to close.
-export function Drawer(props: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+// heightRatio gives the sheet a fixed share of the screen, for content like search that should not resize with its results.
+// onClosed fires once the sheet has left the screen, which is when navigation can safely present.
+export function Drawer(props: {
+  open: boolean;
+  onClose: () => void;
+  onClosed?: () => void;
+  title: string;
+  heightRatio?: number;
+  children: ReactNode;
+}) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
@@ -18,6 +37,11 @@ export function Drawer(props: { open: boolean; onClose: () => void; title: strin
   const offset = useAnimatedValue(height);
   const drag = useAnimatedValue(0);
   const dragStart = useRef(0);
+  const onClosed = useRef(props.onClosed);
+
+  useEffect(() => {
+    onClosed.current = props.onClosed;
+  });
 
   if (props.open && !mounted) setMounted(true);
 
@@ -31,7 +55,10 @@ export function Drawer(props: { open: boolean; onClose: () => void; title: strin
     }
     if (reduced) offset.setValue(height);
     else Animated.timing(offset, { toValue: height, duration: CLOSE_MS, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start();
-    const t = setTimeout(() => setMounted(false), reduced ? 0 : CLOSE_MS);
+    const t = setTimeout(() => {
+      setMounted(false);
+      onClosed.current?.();
+    }, reduced ? 0 : CLOSE_MS);
     return () => clearTimeout(t);
   }, [props.open, mounted, height, offset, drag, reduced]);
 
@@ -55,13 +82,22 @@ export function Drawer(props: { open: boolean; onClose: () => void; title: strin
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "#000", opacity: backdrop }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={props.onClose} accessibilityLabel="ปิด" />
       </Animated.View>
-      <Animated.View style={[s.sheet, { paddingBottom: insets.bottom + 16, transform: [{ translateY }] }]} accessibilityViewIsModal>
-        <View {...handlers}>
-          <View style={s.handle} />
-          <Text style={s.title}>{props.title}</Text>
-        </View>
-        {props.children}
-      </Animated.View>
+      <View style={[s.frame, { paddingTop: insets.top + 24 }]} pointerEvents="box-none">
+        <Animated.View
+          style={[
+            s.sheet,
+            props.heightRatio ? { height: height * props.heightRatio, maxHeight: "100%" } : null,
+            { paddingBottom: insets.bottom + 16, transform: [{ translateY }] },
+          ]}
+          accessibilityViewIsModal
+        >
+          <View {...handlers}>
+            <View style={s.handle} />
+            <Text style={s.title}>{props.title}</Text>
+          </View>
+          {props.children}
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -101,11 +137,8 @@ export function useConfirm() {
 }
 
 const s = StyleSheet.create({
+  frame: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "flex-end" },
   sheet: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
     backgroundColor: color.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

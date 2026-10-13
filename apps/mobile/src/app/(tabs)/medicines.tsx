@@ -27,10 +27,31 @@ type Tab = "stock" | "usage";
 
 export default function Medicines() {
   const [tab, setTab] = useState<Tab>("stock");
-  const { query, field } = useHeaderSearch(tab === "stock" ? "ค้นหาด้วยชื่อยาหรือวัคซีน" : "ค้นหาด้วยชื่อแม่พันธุ์หรือยา");
   const { data: medicines } = useQuery<MedicineRow>(MEDICINES);
   const { data: usage } = useQuery<UsageRow>(USAGE);
-  const q = query.trim().toLowerCase();
+  const search = useHeaderSearch(
+    tab === "stock"
+      ? {
+          placeholder: "ค้นหาด้วยชื่อยาหรือวัคซีน",
+          emptyText: "ไม่พบยาหรือวัคซีน",
+          items: medicines.map((m) => ({
+            key: m.id,
+            title: m.title,
+            subtitle: m.description ?? undefined,
+            onPress: () => router.push({ pathname: "/medicines/[id]", params: { id: m.id } }),
+          })),
+        }
+      : {
+          placeholder: "ค้นหาด้วยชื่อแม่พันธุ์หรือยา",
+          emptyText: "ไม่พบประวัติการใช้ยา",
+          items: usage.map((u) => ({
+            key: u.id,
+            title: u.medicine ?? "ไม่ระบุยา",
+            subtitle: `${u.sow_name} · ${thaiDateLong(u.used_at, true)}`,
+            onPress: () => router.push({ pathname: "/sows/[id]", params: { id: u.sow_id } }),
+          })),
+        }
+  );
 
   const header = (
     <View style={{ gap: 12 }}>
@@ -42,17 +63,17 @@ export default function Medicines() {
           { value: "usage", label: "ประวัติใช้ยา" },
         ]}
       />
-      {field}
     </View>
   );
 
   return (
     <View style={screen.root}>
+      {search}
       {tab === "stock" ? (
         <FlatList
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={[screen.content, { paddingBottom: 96 }]}
-          data={medicines.filter((m) => !q || m.title.toLowerCase().includes(q))}
+          data={medicines}
           keyExtractor={(m) => m.id}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={header}
@@ -79,7 +100,7 @@ export default function Medicines() {
         <FlatList
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={screen.content}
-          data={usage.filter((u) => !q || u.sow_name.toLowerCase().includes(q) || (u.medicine ?? "").toLowerCase().includes(q))}
+          data={usage}
           keyExtractor={(u) => u.id}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={header}

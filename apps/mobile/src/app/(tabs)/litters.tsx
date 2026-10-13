@@ -10,6 +10,7 @@ import { color, Text } from "../../theme";
 import { Cake, Calendar, Check, PiggyBank, Plus } from "../../theme/icons";
 import { FadeIn } from "../../components/motion";
 import { useHeaderSearch } from "../../components/HeaderActions";
+import { LITTER_STAGE_LABEL } from "../../lib/litterLabels";
 
 type LitterRow = {
   id: string;
@@ -33,15 +34,23 @@ type Filter = "unsold" | "sold";
 
 export default function Litters() {
   const [filter, setFilter] = useState<Filter>("unsold");
-  const { query, field } = useHeaderSearch("ค้นหาด้วยชื่อแม่พันธุ์");
   const { data } = useQuery<LitterRow>(LITTERS);
-  const q = query.trim().toLowerCase();
-  const litters = data
-    .filter((l) => (litterStage(l) === "sold") === (filter === "sold"))
-    .filter((l) => !q || l.sow_name.toLowerCase().includes(q));
+  const litters = data.filter((l) => (litterStage(l) === "sold") === (filter === "sold"));
+  const search = useHeaderSearch({
+    placeholder: "ค้นหาด้วยชื่อแม่พันธุ์",
+    emptyText: "ไม่พบครอก",
+    items: data.map((l) => ({
+      key: l.id,
+      title: `ลูกขุนแม่${l.sow_name}`,
+      subtitle: [LITTER_STAGE_LABEL[litterStage(l)].text, l.birth_date && `คลอด ${thaiDateLong(l.birth_date)}`].filter(Boolean).join(" · "),
+      onPress: () => router.push({ pathname: "/litters/[id]", params: { id: l.id } }),
+    })),
+  });
 
   return (
-    <FlatList
+    <>
+      {search}
+      <FlatList
       contentInsetAdjustmentBehavior="automatic"
       style={screen.root}
       contentContainerStyle={screen.content}
@@ -50,7 +59,6 @@ export default function Litters() {
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
         <View style={{ gap: 12 }}>
-          {field}
           <Segmented
             value={filter}
             onChange={setFilter}
@@ -68,6 +76,7 @@ export default function Litters() {
         </FadeIn>
       )}
     />
+    </>
   );
 }
 
