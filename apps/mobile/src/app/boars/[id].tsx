@@ -2,7 +2,8 @@ import { useQuery } from "@powersync/react-native";
 import * as Haptics from "expo-haptics";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
+import { useConfirm } from "../../components/Drawer";
 import { SubmitButton } from "../../components/Form";
 import { createBoar, deleteBoar, saveErrorMessage, updateBoar } from "../../db/mutations";
 import { useOnline } from "../../db/useOnline";
@@ -53,11 +54,9 @@ function BoarForm({ id, isNew, boar }: { id: string; isNew: boolean; boar: BoarD
     run(() => (isNew ? createBoar(input) : updateBoar(id, input)), !isNew);
   };
 
+  const [confirmDrawer, confirm] = useConfirm();
   const confirmDelete = () =>
-    Alert.alert("ลบพ่อพันธุ์", `ต้องการลบ ${boar?.breed} หรือไม่`, [
-      { text: "ยกเลิก", style: "cancel" },
-      { text: "ลบ", style: "destructive", onPress: () => run(() => deleteBoar(id)) },
-    ]);
+    confirm({ title: "ลบพ่อพันธุ์", message: `ต้องการลบ ${boar?.breed} หรือไม่`, confirmLabel: "ลบพ่อพันธุ์", onConfirm: () => run(() => deleteBoar(id)) });
 
   const uses = (boar?.breedings ?? 0) + (boar?.litters ?? 0);
   const inUse = uses > 0;
@@ -89,6 +88,7 @@ function BoarForm({ id, isNew, boar }: { id: string; isNew: boolean; boar: BoarD
           {inUse && <Text style={s.hint}>ลบไม่ได้ เพราะมีประวัติการผสมหรือครอกที่ใช้พ่อพันธุ์นี้ ({uses} รายการ)</Text>}
         </>
       )}
+      {confirmDrawer}
     </ScrollView>
   );
 }

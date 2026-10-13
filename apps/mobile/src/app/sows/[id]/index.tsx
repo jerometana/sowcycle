@@ -5,6 +5,7 @@ import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ColumnChart, type ChartPoint } from "../../../components/ColumnChart";
+import { useConfirm } from "../../../components/Drawer";
 import { Button, Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../../components/ui";
 import { deleteTreatment, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
@@ -77,16 +78,6 @@ const saleWeightPoints = (litters: SoldLitterRow[]): ChartPoint[] =>
     .filter((l) => l.sold_at && (l.avg_weight ?? 0) > 0)
     .sort((a, b) => a.sold_at!.localeCompare(b.sold_at!))
     .map((l) => ({ key: l.id, label: thaiMonthYear(l.sold_at!), value: l.avg_weight! }));
-
-const confirmDeleteTreatment = (t: TreatmentRow) =>
-  Alert.alert("ลบประวัติการรักษา", `ลบการใช้ ${t.medicine ?? "ยา"} วันที่ ${thaiDateLong(t.used_at, true)} หรือไม่`, [
-    { text: "ยกเลิก", style: "cancel" },
-    {
-      text: "ลบ",
-      style: "destructive",
-      onPress: () => deleteTreatment(t.id).catch((e) => Alert.alert("ลบไม่สำเร็จ", saveErrorMessage(e))),
-    },
-  ]);
 
 type Tab = "details" | "history";
 type HistoryFilter = "all" | "breedings" | "treatments";
@@ -276,8 +267,16 @@ function BreedingCard({ breeding: b, number }: { breeding: BreedingRow; number: 
 }
 
 function TreatmentCard({ treatment: t }: { treatment: TreatmentRow }) {
+  const [confirmDrawer, confirm] = useConfirm();
+  const confirmDelete = () =>
+    confirm({
+      title: "ลบประวัติการรักษา",
+      message: `ลบการใช้ ${t.medicine ?? "ยา"} วันที่ ${thaiDateLong(t.used_at, true)} หรือไม่`,
+      confirmLabel: "ลบ",
+      onConfirm: () => deleteTreatment(t.id).catch((e) => Alert.alert("ลบไม่สำเร็จ", saveErrorMessage(e))),
+    });
   return (
-    <Pressable onLongPress={() => confirmDeleteTreatment(t)} delayLongPress={400}>
+    <Pressable onLongPress={confirmDelete} delayLongPress={400}>
       <Card>
         <CardHeader
           title={t.medicine ?? "ไม่ระบุยา"}
@@ -287,6 +286,7 @@ function TreatmentCard({ treatment: t }: { treatment: TreatmentRow }) {
         {!!t.symptoms && <InfoRow icon={Activity} label="อาการ">{t.symptoms}</InfoRow>}
         {!!t.notes && <Text style={s.muted}>{t.notes}</Text>}
       </Card>
+      {confirmDrawer}
     </Pressable>
   );
 }

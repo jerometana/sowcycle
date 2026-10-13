@@ -2,7 +2,8 @@ import { useQuery } from "@powersync/react-native";
 import * as Haptics from "expo-haptics";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
+import { useConfirm } from "../../components/Drawer";
 import { NumberField, SubmitButton } from "../../components/Form";
 import { createMedicine, deleteMedicine, saveErrorMessage, updateMedicine } from "../../db/mutations";
 import { useOnline } from "../../db/useOnline";
@@ -55,11 +56,9 @@ function MedicineForm({ id, isNew, medicine }: { id: string; isNew: boolean; med
     run(() => (isNew ? createMedicine(input) : updateMedicine(id, input)), !isNew);
   };
 
+  const [confirmDrawer, confirm] = useConfirm();
   const confirmDelete = () =>
-    Alert.alert("ลบยา", `ต้องการลบ ${medicine?.title} หรือไม่`, [
-      { text: "ยกเลิก", style: "cancel" },
-      { text: "ลบ", style: "destructive", onPress: () => run(() => deleteMedicine(id)) },
-    ]);
+    confirm({ title: "ลบยา", message: `ต้องการลบ ${medicine?.title} หรือไม่`, confirmLabel: "ลบยา", onConfirm: () => run(() => deleteMedicine(id)) });
 
   const inUse = (medicine?.uses ?? 0) > 0;
 
@@ -85,6 +84,7 @@ function MedicineForm({ id, isNew, medicine }: { id: string; isNew: boolean; med
           {inUse && <Text style={s.hint}>ลบไม่ได้ เพราะมีประวัติการรักษาที่ใช้ยานี้ {medicine.uses} ครั้ง</Text>}
         </>
       )}
+      {confirmDrawer}
     </ScrollView>
   );
 }
