@@ -29,10 +29,7 @@ export default function Medicines() {
   const { data: medicines } = useQuery<MedicineRow>(MEDICINES);
   const { data: usage } = useQuery<UsageRow>(USAGE);
   const tools = useHeaderTools({
-    add:
-      tab === "stock"
-        ? { label: "เพิ่มยา", onPress: () => router.push({ pathname: "/medicines/[id]", params: { id: "new" } }) }
-        : undefined,
+    add: { label: "เพิ่มยา", onPress: () => router.push({ pathname: "/medicines/[id]", params: { id: "new" } }) },
     search:
       tab === "stock"
         ? {

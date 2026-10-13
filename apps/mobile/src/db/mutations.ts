@@ -126,6 +126,9 @@ export const createSow = async (input: SowInput) => {
 export const updateSow = (id: string, input: SowInput) =>
   runWrite(supabase.from("sows").update({ ...input, updated_at: new Date().toISOString() }).eq("id", Number(id)));
 
+// The database cascades this to the sow's breedings, litters, treatments and breed links.
+export const deleteSow = (id: string) => runWrite(supabase.from("sows").delete().eq("id", Number(id)));
+
 export type MedicineInput = { title: string; description: string; stock_count: number };
 
 export const createMedicine = async (input: MedicineInput) => {

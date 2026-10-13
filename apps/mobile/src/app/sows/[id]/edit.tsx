@@ -1,10 +1,11 @@
 import { useQuery } from "@powersync/react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { OptionalDateField } from "../../../components/DateField";
+import { useConfirm } from "../../../components/Drawer";
 import { NumberField, SubmitButton } from "../../../components/Form";
-import { createSow, saveErrorMessage, updateSow, type SowInput } from "../../../db/mutations";
+import { createSow, deleteSow, saveErrorMessage, updateSow, type SowInput } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { haptic } from "../../../lib/haptics";
 import { color, Text, TextInput } from "../../../theme";
@@ -15,6 +16,9 @@ type SowDetail = {
   birth_date: string | null;
   add_date: string | null;
   is_active: number | null;
+  breedings: number;
+  litters: number;
+  treatments: number;
 };
 
 // id "new" adds a sow; any other id edits that sow.
@@ -22,7 +26,11 @@ export default function SowSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isNew = id === "new";
   const { data } = useQuery<SowDetail>(
-    "select name, breasts_count, birth_date, add_date, is_active from sows where id = ?",
+    `select name, breasts_count, birth_date, add_date, is_active,
+       (select count(*) from breedings where sow_id = sows.id) as breedings,
+       (select count(*) from litters where sow_id = sows.id) as litters,
+       (select count(*) from medical_records where sow_id = sows.id) as treatments
+     from sows where id = ?`,
     [id]
   );
   const sow = data[0];
@@ -40,6 +48,36 @@ function SowForm({ id, isNew, sow }: { id: string; isNew: boolean; sow: SowDetai
   const [active, setActive] = useState(sow ? sow.is_active !== 0 : true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [confirmDrawer, confirm] = useConfirm();
+  const history = sow
+    ? [
+        sow.breedings && `ประวัติผสม ${sow.breedings} ครั้ง`,
+        sow.litters && `ครอก ${sow.litters} ครอก`,
+        sow.treatments && `การใช้ยา ${sow.treatments} ครั้ง`,
+      ].filter(Boolean)
+    : [];
+
+  const remove = () =>
+    confirm({
+      title: "ลบแม่พันธุ์",
+      message: history.length
+        ? `ลบ ${sow?.name} พร้อม${history.join(" ")} ลบแล้วกู้คืนไม่ได้`
+        : `ต้องการลบ ${sow?.name} หรือไม่`,
+      confirmLabel: "ลบแม่พันธุ์",
+      onConfirm: async () => {
+        setBusy(true);
+        try {
+          await deleteSow(id);
+          haptic.success();
+          router.dismissTo("/sows");
+        } catch (e) {
+          haptic.error();
+          setError(saveErrorMessage(e));
+          setBusy(false);
+        }
+      },
+    });
 
   const save = async () => {
     const breastsCount = breasts === "" ? null : Number(breasts);
@@ -86,6 +124,16 @@ function SowForm({ id, isNew, sow }: { id: string; isNew: boolean; sow: SowDetai
       </View>
       {error && <Text style={s.error}>{error}</Text>}
       <SubmitButton title={isNew ? "เพิ่มแม่พันธุ์" : "บันทึก"} online={online} busy={busy} onPress={save} />
+      {!isNew && (
+        <Pressable
+          onPress={remove}
+          disabled={!online || busy}
+          style={({ pressed }) => [s.delete, !online && { opacity: 0.4 }, pressed && { opacity: 0.6 }]}
+        >
+          <Text style={s.deleteText}>ลบแม่พันธุ์</Text>
+        </Pressable>
+      )}
+      {confirmDrawer}
     </ScrollView>
   );
 }
@@ -97,4 +145,6 @@ const s = StyleSheet.create({
   switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8 },
   switchLabel: { fontSize: 16 },
   error: { color: "#dc2626", textAlign: "center", marginTop: 8 },
+  delete: { alignItems: "center", paddingVertical: 14, marginTop: 8 },
+  deleteText: { color: "#dc2626", fontSize: 16, fontWeight: "600" },
 });
