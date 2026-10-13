@@ -19,13 +19,16 @@ export type SowCardData = {
   lastFarrow: string | null;
 };
 
+// The sow's own breeds, as the web shows them; `s` must name the sows row.
+export const SOW_BREEDS = `(select group_concat(breed, ', ') from (
+    select bo.breed from sow_breeds sb join boars bo on bo.id = sb.breed_id where sb.sow_id = s.id order by bo.breed))`;
+
 const SOW_CARDS = `
   select s.id, s.name, s.is_active,
     ob.id as open_breeding_id, ob.expected_farrow_date,
     (select max(actual_farrow_date) from breedings f
       where f.sow_id = s.id and f.actual_farrow_date is not null and coalesce(f.is_aborted, 0) = 0) as last_farrow_date,
-    (select bo.breed from breedings lb join boars bo on bo.id = lb.boar_id
-      where lb.sow_id = s.id order by lb.breed_date desc limit 1) as breed
+    ${SOW_BREEDS} as breed
   from sows s
   left join breedings ob on ob.id = (
     select id from breedings where sow_id = s.id and actual_farrow_date is null and coalesce(is_aborted, 0) = 0

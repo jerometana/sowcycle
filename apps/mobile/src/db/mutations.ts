@@ -21,20 +21,25 @@ export class SaveTimeoutError extends Error {}
 
 const SAVE_TIMEOUT_MS = 15_000;
 
-type AbortableQuery = {
-  abortSignal: (signal: AbortSignal) => PromiseLike<{ error: unknown }>;
+type AbortableQuery<T> = {
+  abortSignal: (signal: AbortSignal) => PromiseLike<{ error: unknown; data?: T | null }>;
 };
 
-const runWrite = async (query: AbortableQuery) => {
+const runWriteData = async <T>(query: AbortableQuery<T>) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SAVE_TIMEOUT_MS);
   try {
-    const { error } = await query.abortSignal(controller.signal);
+    const { error, data } = await query.abortSignal(controller.signal);
     if (controller.signal.aborted) throw new SaveTimeoutError();
     if (error) throw error;
+    return data;
   } finally {
     clearTimeout(timer);
   }
+};
+
+const runWrite = async <T>(query: AbortableQuery<T>) => {
+  await runWriteData(query);
 };
 
 export const recordBreeding = (input: BreedingInput) =>
@@ -148,13 +153,23 @@ export type SowInput = {
   is_active: boolean;
 };
 
-export const createSow = async (input: SowInput) => {
+export const createSow = async (input: SowInput, breedIds: string[]) => {
   const { data } = await supabase.auth.getSession();
-  return runWrite(supabase.from("sows").insert({ ...input, user_id: data.session?.user.id }));
+  const rows = await runWriteData(supabase.from("sows").insert({ ...input, user_id: data.session?.user.id }).select("id"));
+  if (rows?.[0]) await setSowBreeds(String(rows[0].id), breedIds);
 };
 
-export const updateSow = (id: string, input: SowInput) =>
-  runWrite(supabase.from("sows").update({ ...input, updated_at: new Date().toISOString() }).eq("id", Number(id)));
+export const updateSow = async (id: string, input: SowInput, breedIds: string[]) => {
+  await runWrite(supabase.from("sows").update({ ...input, updated_at: new Date().toISOString() }).eq("id", Number(id)));
+  await setSowBreeds(id, breedIds);
+};
+
+// Replaces the sow's breed links with exactly this set, as the web does, so a retry lands on the same rows.
+const setSowBreeds = async (sowId: string, breedIds: string[]) => {
+  await runWrite(supabase.from("sow_breeds").delete().eq("sow_id", Number(sowId)));
+  if (breedIds.length)
+    await runWrite(supabase.from("sow_breeds").insert(breedIds.map((b) => ({ sow_id: Number(sowId), breed_id: Number(b) }))));
+};
 
 // The database cascades this to the sow's breedings, litters, treatments and breed links.
 export const deleteSow = (id: string) => runWrite(supabase.from("sows").delete().eq("id", Number(id)));
