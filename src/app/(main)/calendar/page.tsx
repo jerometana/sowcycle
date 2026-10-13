@@ -90,7 +90,7 @@ export default function CalendarPage() {
 
   return (
     <>
-      <TopBar title="Calendar" />
+      <TopBar title="กำหนดการ" />
       <main className="space-y-4 p-4 pt-0 md:pb-8 md:p-8">
         <div className="grid grid-cols-1 gap-8">
           <div className="lg:col-span-1">

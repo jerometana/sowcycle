@@ -1,9 +1,11 @@
 import { useQuery } from "@powersync/react-native";
+import { cycleEvents, type CycleEventKind, type EventLitter } from "@sowcycle/core";
 import {
   addDays,
   addMonths,
   differenceInCalendarDays,
   endOfMonth,
+  format,
   isSameDay,
   isSameMonth,
   startOfDay,
@@ -11,53 +13,86 @@ import {
   startOfWeek,
 } from "date-fns";
 import { router } from "expo-router";
-import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
+import { useMemo, useRef, useState } from "react";
+import { ScrollView, StyleSheet, View, type GestureResponderEvent } from "react-native";
+import { FadeIn, PressableScale } from "../../components/motion";
 import { Card, CardHeader, EmptyText, InfoRow, screen } from "../../components/ui";
+import { EVENT_BREEDINGS, toEventBreeding } from "../../db/cycleEvents";
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
-import { Calendar as CalendarIcon, ChevronRight, Heart, PiggyBank } from "../../theme/icons";
-import { FadeIn, PressableScale } from "../../components/motion";
+import { Calendar as CalendarIcon, ChevronRight, CircleAlert, Heart, PiggyBank } from "../../theme/icons";
 
-const LIME = "#84cc16";
 const WEEKDAYS = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+const SWIPE_DISTANCE = 50;
 
-type FarrowRow = { sow_id: string; sow_name: string; expected_farrow_date: string; actual_farrow_date: string | null; is_aborted: number | null };
-type SaleRow = { sow_id: string; sow_name: string; saleable_at: string; sold_at: string | null; piglets_born_count: number | null };
+type CalendarEvent = { kind: CycleEventKind; sowId: string; sowName: string; date: Date; done: boolean; count?: number };
 
-type DayEvent =
-  | { kind: "farrow"; sowId: string; sowName: string; date: Date; done: boolean }
-  | { kind: "sale"; sowId: string; sowName: string; date: Date; done: boolean; count: number };
+const KINDS: Record<
+  CycleEventKind,
+  { dot: string; icon: LucideIcon; title: (e: CalendarEvent) => string; label: (done: boolean) => string }
+> = {
+  check21: { dot: color.amber, icon: CircleAlert, title: (e) => `กลับสัดครั้งที่ 1 แม่${e.sowName}`, label: () => "วันเช็คกลับสัด" },
+  check42: { dot: color.amber, icon: CircleAlert, title: (e) => `กลับสัดครั้งที่ 2 แม่${e.sowName}`, label: () => "วันเช็คกลับสัด" },
+  farrowDue: {
+    dot: color.primary,
+    icon: Heart,
+    title: (e) => `${e.done ? "คลอดแล้ว" : "กำหนดคลอด"} แม่${e.sowName}`,
+    label: (done) => (done ? "คลอดเมื่อ" : "กำหนดคลอด"),
+  },
+  saleable: {
+    dot: "#84cc16",
+    icon: CalendarIcon,
+    title: (e) => `${e.done ? "ขายแล้ว" : "กำหนดขาย"} ลูกขุนแม่${e.sowName}`,
+    label: (done) => (done ? "ขายแล้วเมื่อ" : "กำหนดขาย"),
+  },
+};
+const DOT_ORDER: CycleEventKind[] = ["farrowDue", "saleable", "check21", "check42"];
 
-// Same rule as the web calendar: a farrow sits on its actual date once recorded, else on the expected date; a sale on its sold date, else the saleable date.
-const useDayEvents = (): DayEvent[] => {
-  const { data: farrows } = useQuery<FarrowRow>(`
-    select b.sow_id, s.name as sow_name, b.expected_farrow_date, b.actual_farrow_date, b.is_aborted
-    from breedings b join sows s on s.id = b.sow_id where coalesce(b.is_aborted, 0) = 0`);
-  const { data: sales } = useQuery<SaleRow>(`
-    select l.sow_id, s.name as sow_name, l.saleable_at, l.sold_at, l.piglets_born_count
-    from litters l join sows s on s.id = l.sow_id where l.saleable_at is not null`);
-  return [
-    ...farrows.map((f) => ({
-      kind: "farrow" as const,
-      sowId: f.sow_id,
-      sowName: f.sow_name,
-      date: startOfDay(new Date(f.actual_farrow_date ?? f.expected_farrow_date)),
-      done: !!f.actual_farrow_date,
-    })),
-    ...sales.map((l) => ({
-      kind: "sale" as const,
-      sowId: l.sow_id,
-      sowName: l.sow_name,
-      date: startOfDay(new Date(l.sold_at ?? l.saleable_at)),
-      done: !!l.sold_at,
-      count: l.piglets_born_count ?? 0,
-    })),
-  ];
+type LitterRow = EventLitter & { piglets_born_count: number | null };
+const LITTERS = `
+  select l.id, l.sow_id, s.name as sow_name, l.fattening_at, l.saleable_at, l.sold_at, l.piglets_born_count
+  from litters l join sows s on s.id = l.sow_id`;
+
+const dayKey = (d: Date) => format(d, "yyyy-MM-dd");
+
+// Upcoming events come from the shared cycleEvents rules; finished farrows and sales are added so the calendar keeps history.
+const useEventsByDay = () => {
+  const { data: breedingRows } = useQuery<Parameters<typeof toEventBreeding>[0]>(EVENT_BREEDINGS);
+  const { data: litters } = useQuery<LitterRow>(LITTERS);
+
+  return useMemo(() => {
+    const breedings = breedingRows.map(toEventBreeding);
+    const counts = new Map(litters.map((l) => [l.id, l.piglets_born_count ?? 0]));
+    const events: CalendarEvent[] = [
+      ...cycleEvents(breedings, litters).map((e) => ({
+        ...e,
+        date: startOfDay(e.date),
+        done: false,
+        count: e.kind === "saleable" ? counts.get(e.sourceId) : undefined,
+      })),
+      ...breedings
+        .filter((b) => b.actual_farrow_date && !b.is_aborted)
+        .map((b) => ({ kind: "farrowDue" as const, sowId: b.sow_id, sowName: b.sow_name, date: startOfDay(new Date(b.actual_farrow_date!)), done: true })),
+      ...litters
+        .filter((l) => l.sold_at)
+        .map((l) => ({
+          kind: "saleable" as const,
+          sowId: l.sow_id,
+          sowName: l.sow_name,
+          date: startOfDay(new Date(l.sold_at!)),
+          done: true,
+          count: l.piglets_born_count ?? 0,
+        })),
+    ];
+    const byDay = new Map<string, CalendarEvent[]>();
+    for (const e of events) byDay.set(dayKey(e.date), [...(byDay.get(dayKey(e.date)) ?? []), e]);
+    return byDay;
+  }, [breedingRows, litters]);
 };
 
 export default function CalendarScreen() {
-  const events = useDayEvents();
+  const eventsByDay = useEventsByDay();
   const today = startOfDay(new Date());
   const [month, setMonth] = useState(startOfMonth(today));
   const [selected, setSelected] = useState(today);
@@ -65,30 +100,50 @@ export default function CalendarScreen() {
   const gridStart = startOfWeek(startOfMonth(month));
   const weeks = Math.ceil((differenceInCalendarDays(endOfMonth(month), gridStart) + 1) / 7);
   const days = Array.from({ length: weeks * 7 }, (_, i) => addDays(gridStart, i));
+  const selectedEvents = eventsByDay.get(dayKey(selected)) ?? [];
+  const awayFromToday = !isSameDay(selected, today) || !isSameMonth(month, today);
 
-  const dayStyle = (d: Date) => {
-    const onDay = events.filter((e) => isSameDay(e.date, d));
-    const farrow = onDay.find((e) => e.kind === "farrow");
-    const sale = onDay.find((e) => e.kind === "sale");
-    const overdue = (e?: DayEvent) => !!e && !e.done && e.date < today;
-    if (farrow) return { backgroundColor: color.primary, opacity: overdue(farrow) ? 0.5 : 1 };
-    if (sale) return { backgroundColor: LIME, opacity: overdue(sale) ? 0.5 : 1 };
-    return null;
+  const select = (d: Date) => {
+    setSelected(d);
+    if (!isSameMonth(d, month)) setMonth(startOfMonth(d));
+  };
+  const goToday = () => {
+    setSelected(today);
+    setMonth(startOfMonth(today));
   };
 
-  const selectedEvents = events.filter((e) => isSameDay(e.date, selected));
+  // Touch events instead of PanResponder: the ScrollView cancels child responders, and iOS can send cancel and end for one gesture.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: GestureResponderEvent) => {
+    touchStart.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+  };
+  const onTouchEnd = (e: GestureResponderEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const dx = e.nativeEvent.pageX - start.x;
+    const dy = e.nativeEvent.pageY - start.y;
+    if (Math.abs(dx) >= SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy) * 2) setMonth((m) => addMonths(m, dx < 0 ? 1 : -1));
+  };
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={screen.content}>
-      <View style={s.calendar}>
+      <View style={s.calendar} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
         <View style={s.monthRow}>
-          <PressableScale hitSlop={12} onPress={() => setMonth(addMonths(month, -1))}>
+          <PressableScale hitSlop={12} accessibilityLabel="เดือนก่อนหน้า" onPress={() => setMonth(addMonths(month, -1))}>
             <View style={{ transform: [{ rotate: "180deg" }] }}>
               <ChevronRight size={20} color={color.mutedForeground} />
             </View>
           </PressableScale>
-          <Text style={s.monthTitle}>{month.toLocaleDateString("th-TH", { month: "long", year: "numeric" })}</Text>
-          <PressableScale hitSlop={12} onPress={() => setMonth(addMonths(month, 1))}>
+          <View style={s.titleGroup}>
+            <Text style={s.monthTitle}>{month.toLocaleDateString("th-TH", { month: "long", year: "numeric" })}</Text>
+            {awayFromToday && (
+              <PressableScale hitSlop={8} onPress={goToday} style={s.todayPill} accessibilityLabel="กลับไปวันนี้">
+                <Text style={s.todayPillText}>วันนี้</Text>
+              </PressableScale>
+            )}
+          </View>
+          <PressableScale hitSlop={12} accessibilityLabel="เดือนถัดไป" onPress={() => setMonth(addMonths(month, 1))}>
             <ChevronRight size={20} color={color.mutedForeground} />
           </PressableScale>
         </View>
@@ -99,15 +154,37 @@ export default function CalendarScreen() {
         </View>
         <View style={s.grid}>
           {days.map((d) => {
-            const marked = dayStyle(d);
+            const onDay = eventsByDay.get(dayKey(d)) ?? [];
+            const kinds = DOT_ORDER.filter((k) => onDay.some((e) => e.kind === k));
             const isSelected = isSameDay(d, selected);
+            const isToday = isSameDay(d, today);
             const inMonth = isSameMonth(d, month);
             return (
-              <PressableScale key={d.toISOString()} style={s.cell} onPress={() => setSelected(d)}>
-                <View style={[s.dayDot, isSelected ? s.selected : marked && { backgroundColor: marked.backgroundColor, opacity: marked.opacity }]}>
-                  <Text style={[s.dayText, !inMonth && { color: "#d4d4d4" }, (marked || isSelected) && { color: color.primaryForeground }]}>
+              <PressableScale
+                key={d.toISOString()}
+                style={s.cell}
+                onPress={() => select(d)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={`${thaiDateLong(d)}${isToday ? " วันนี้" : ""}${onDay.length ? ` ${onDay.length} รายการ` : ""}`}
+              >
+                <View style={[s.day, isToday && s.today, isSelected && s.selected]}>
+                  <Text
+                    style={[
+                      s.dayText,
+                      !inMonth && { color: "#d4d4d4" },
+                      isToday && { color: color.primary, fontWeight: "700" },
+                      isSelected && { color: color.primaryForeground },
+                    ]}
+                  >
                     {d.getDate()}
                   </Text>
+                </View>
+                <View style={s.dots}>
+                  {kinds.map((k) => {
+                    const overdue = onDay.filter((e) => e.kind === k).every((e) => !e.done && e.date < today);
+                    return <View key={k} style={[s.dot, { backgroundColor: KINDS[k].dot, opacity: overdue ? 0.4 : 1 }]} />;
+                  })}
                 </View>
               </PressableScale>
             );
@@ -117,34 +194,30 @@ export default function CalendarScreen() {
 
       <Text style={s.selectedTitle}>{thaiDateLong(selected, true)}</Text>
       {selectedEvents.length === 0 && <EmptyText>ไม่มีรายการในวันนี้</EmptyText>}
-      {selectedEvents.map((e, i) => (
-        <FadeIn key={`${selected.toISOString()}:${i}`} index={i}>
-          <Card onPress={() => router.push({ pathname: "/sows/[id]", params: { id: e.sowId } })}>
-            <CardHeader
-              title={e.kind === "farrow" ? `${e.done ? "คลอดแล้ว" : "กำหนดคลอด"} แม่${e.sowName}` : `${e.done ? "ขายแล้ว" : "กำหนดขาย"} ลูกขุนแม่${e.sowName}`}
-              tone={e.kind === "farrow" ? "primary" : "default"}
-            />
-            {e.kind === "sale" && <InfoRow icon={PiggyBank} label="จำนวน">{`${e.count} ตัว`}</InfoRow>}
-            <InfoRow
-              icon={e.kind === "farrow" ? Heart : CalendarIcon}
-              tint={e.kind === "farrow" ? color.primary : color.mutedForeground}
-              label={e.kind === "farrow" ? (e.done ? "คลอดเมื่อ" : "กำหนดคลอด") : e.done ? "ขายแล้วเมื่อ" : "กำหนดขาย"}
-            >
-              <Text style={s.value}>
-                {thaiDateLong(e.date)}
-                {!e.done && (
-                  <Text style={s.days}>
-                    {(() => {
-                      const n = differenceInCalendarDays(e.date, today);
-                      return n >= 0 ? `  อีก ${n} วัน` : `  เลยมา ${-n} วัน`;
-                    })()}
-                  </Text>
-                )}
-              </Text>
-            </InfoRow>
-          </Card>
-        </FadeIn>
-      ))}
+      {selectedEvents.map((e, i) => {
+        const kind = KINDS[e.kind];
+        return (
+          <FadeIn key={`${dayKey(selected)}:${i}`} index={i}>
+            <Card onPress={() => router.push({ pathname: "/sows/[id]", params: { id: e.sowId } })}>
+              <CardHeader title={kind.title(e)} tone={e.kind === "farrowDue" ? "primary" : "default"} />
+              {e.count !== undefined && <InfoRow icon={PiggyBank} label="จำนวน">{`${e.count} ตัว`}</InfoRow>}
+              <InfoRow icon={kind.icon} tint={e.done ? color.mutedForeground : kind.dot} label={kind.label(e.done)}>
+                <Text style={s.value}>
+                  {thaiDateLong(e.date)}
+                  {!e.done && (
+                    <Text style={s.days}>
+                      {(() => {
+                        const n = differenceInCalendarDays(e.date, today);
+                        return n >= 0 ? `  อีก ${n} วัน` : `  เลยมา ${-n} วัน`;
+                      })()}
+                    </Text>
+                  )}
+                </Text>
+              </InfoRow>
+            </Card>
+          </FadeIn>
+        );
+      })}
     </ScrollView>
   );
 }
@@ -152,14 +225,20 @@ export default function CalendarScreen() {
 const s = StyleSheet.create({
   calendar: { backgroundColor: color.card, borderRadius: 16, padding: 12 },
   monthRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 8, paddingVertical: 8 },
+  titleGroup: { flexDirection: "row", alignItems: "center", gap: 8 },
   monthTitle: { fontSize: 16, fontWeight: "600" },
+  todayPill: { backgroundColor: "#fce7f3", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 2 },
+  todayPillText: { color: color.primary, fontSize: 13, fontWeight: "600" },
   week: { flexDirection: "row", marginTop: 4 },
   weekday: { flex: 1, textAlign: "center", color: color.mutedForeground, fontSize: 13 },
   grid: { flexDirection: "row", flexWrap: "wrap", marginTop: 4 },
-  cell: { width: `${100 / 7}%`, alignItems: "center", paddingVertical: 4 },
-  dayDot: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  selected: { backgroundColor: "#a3a3a3" },
+  cell: { width: `${100 / 7}%`, alignItems: "center", paddingTop: 4, paddingBottom: 2 },
+  day: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "transparent" },
+  today: { borderColor: color.primary },
+  selected: { backgroundColor: "#a3a3a3", borderColor: "#a3a3a3" },
   dayText: { fontSize: 15, color: color.foreground },
+  dots: { flexDirection: "row", gap: 3, height: 6, marginTop: 3 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
   selectedTitle: { fontSize: 20, fontWeight: "600", marginTop: 8 },
   value: { fontSize: 16, fontWeight: "600", color: color.gray900 },
   days: { fontSize: 14, fontWeight: "500", color: color.mutedForeground },
