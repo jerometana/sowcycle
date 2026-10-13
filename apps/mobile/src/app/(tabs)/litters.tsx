@@ -1,14 +1,16 @@
 import { useQuery } from "@powersync/react-native";
-import { litterStage } from "@sowcycle/core";
+import { litterStage, type LitterStage } from "@sowcycle/core";
 import { differenceInCalendarDays } from "date-fns";
 import { router } from "expo-router";
 import { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
-import { Button, Card, CardHeader, EmptyText, InfoRow, screen, SearchBar, Segmented } from "../../components/ui";
+import { Button, Card, CardHeader, EmptyText, InfoRow, screen } from "../../components/ui";
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Cake, Calendar, Check, PiggyBank, Plus } from "../../theme/icons";
 import { FadeIn } from "../../components/motion";
+import { useHeaderTools } from "../../components/HeaderActions";
+import { LITTER_STAGE_LABEL } from "../../lib/litterLabels";
 
 type LitterRow = {
   id: string;
@@ -21,52 +23,86 @@ type LitterRow = {
   fattening_at: string | null;
   saleable_at: string | null;
   sold_at: string | null;
+  breed: string | null;
 };
 
+const ALL_BREEDS = "all";
+
 const LITTERS = `
-  select l.*, s.name as sow_name
+  select l.*, s.name as sow_name, bo.breed as breed
   from litters l join sows s on s.id = l.sow_id
+  left join boars bo on bo.id = l.boar_id
   order by l.birth_date desc`;
 
-type Filter = "unsold" | "sold";
+// Mirrors the web's กรองลูกหมู stages; ยังไม่ขาย keeps the old default of hiding sold litters.
+const LITTER_FILTERS = {
+  unsold: { label: "ยังไม่ขาย", test: (stage: LitterStage) => stage !== "sold" },
+  nursing: { label: "ยังไม่ขุน", test: (stage: LitterStage) => stage === "nursing" },
+  fattening: { label: "กำลังขุน", test: (stage: LitterStage) => stage === "fattening" },
+  sold: { label: "ขายแล้ว", test: (stage: LitterStage) => stage === "sold" },
+  all: { label: "ทั้งหมด", test: () => true },
+} as const;
+type LitterFilter = keyof typeof LITTER_FILTERS;
 
 export default function Litters() {
-  const [filter, setFilter] = useState<Filter>("unsold");
-  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<LitterFilter>("unsold");
   const { data } = useQuery<LitterRow>(LITTERS);
-  const q = query.trim().toLowerCase();
-  const litters = data
-    .filter((l) => (litterStage(l) === "sold") === (filter === "sold"))
-    .filter((l) => !q || l.sow_name.toLowerCase().includes(q));
+  const [chosenBreed, setBreed] = useState(ALL_BREEDS);
+  const breeds = [...new Set(data.map((l) => l.breed).filter((b): b is string => !!b))].sort((a, b) => a.localeCompare(b, "th"));
+  // A breed whose last litter was deleted falls back to all, rather than leaving an empty list behind a blank filter.
+  const breed = breeds.includes(chosenBreed) ? chosenBreed : ALL_BREEDS;
+  const litters = data.filter(
+    (l) => LITTER_FILTERS[filter].test(litterStage(l)) && (breed === ALL_BREEDS || l.breed === breed)
+  );
+  const tools = useHeaderTools({
+    filters: [
+      {
+        key: "stage",
+        label: "สถานะ",
+        options: (Object.keys(LITTER_FILTERS) as LitterFilter[]).map((key) => ({ key, label: LITTER_FILTERS[key].label })),
+        value: filter,
+        defaultValue: "unsold",
+        onChange: (key) => setFilter(key as LitterFilter),
+      },
+      {
+        key: "breed",
+        label: "สายพันธุ์พ่อพันธุ์",
+        options: [{ key: ALL_BREEDS, label: "ทุกสายพันธุ์" }, ...breeds.map((b) => ({ key: b, label: b }))],
+        value: breed,
+        defaultValue: ALL_BREEDS,
+        onChange: setBreed,
+      },
+    ],
+    search: {
+      placeholder: "ค้นหาด้วยชื่อแม่พันธุ์",
+      emptyText: "ไม่พบครอก",
+      items: litters.map((l) => ({
+        key: l.id,
+        title: `ลูกขุนแม่${l.sow_name}`,
+        subtitle: [LITTER_STAGE_LABEL[litterStage(l)].text, l.birth_date && `คลอด ${thaiDateLong(l.birth_date)}`].filter(Boolean).join(" · "),
+        onPress: () => router.push({ pathname: "/litters/[id]", params: { id: l.id } }),
+      })),
+    },
+  });
 
   return (
-    <FlatList
+    <>
+      {tools}
+      <FlatList
       contentInsetAdjustmentBehavior="automatic"
       style={screen.root}
       contentContainerStyle={screen.content}
       data={litters}
       keyExtractor={(l) => l.id}
       keyboardShouldPersistTaps="handled"
-      ListHeaderComponent={
-        <View style={{ gap: 12 }}>
-          <SearchBar value={query} onChange={setQuery} placeholder="ค้นหาด้วยชื่อแม่พันธุ์" />
-          <Segmented
-            value={filter}
-            onChange={setFilter}
-            options={[
-              { value: "unsold", label: "ยังไม่ขาย" },
-              { value: "sold", label: "ขายแล้ว" },
-            ]}
-          />
-        </View>
-      }
-      ListEmptyComponent={<EmptyText>ไม่มีครอก</EmptyText>}
+      ListEmptyComponent={<EmptyText>{data.length ? "ไม่มีครอกตามตัวกรองนี้" : "ไม่มีครอก"}</EmptyText>}
       renderItem={({ item, index }) => (
         <FadeIn index={index}>
           <LitterCard litter={item} />
         </FadeIn>
       )}
     />
+    </>
   );
 }
 

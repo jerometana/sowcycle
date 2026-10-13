@@ -2,12 +2,12 @@ import { useQuery } from "@powersync/react-native";
 import { router } from "expo-router";
 import { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
-import { Fab } from "../../components/Fab";
-import { Card, CardHeader, EmptyText, InfoRow, screen, SearchBar, Segmented } from "../../components/ui";
+import { Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../components/ui";
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Activity, Syringe } from "../../theme/icons";
 import { FadeIn } from "../../components/motion";
+import { useHeaderTools } from "../../components/HeaderActions";
 
 type MedicineRow = { id: string; title: string; description: string | null; stock_count: number | null; uses: number };
 type UsageRow = { id: string; sow_id: string; sow_name: string; medicine: string | null; used_at: string; symptoms: string | null };
@@ -26,10 +26,33 @@ type Tab = "stock" | "usage";
 
 export default function Medicines() {
   const [tab, setTab] = useState<Tab>("stock");
-  const [query, setQuery] = useState("");
   const { data: medicines } = useQuery<MedicineRow>(MEDICINES);
   const { data: usage } = useQuery<UsageRow>(USAGE);
-  const q = query.trim().toLowerCase();
+  const tools = useHeaderTools({
+    add: { label: "เพิ่มยา", onPress: () => router.push({ pathname: "/medicines/[id]", params: { id: "new" } }) },
+    search:
+      tab === "stock"
+        ? {
+            placeholder: "ค้นหาด้วยชื่อยาหรือวัคซีน",
+            emptyText: "ไม่พบยาหรือวัคซีน",
+            items: medicines.map((m) => ({
+              key: m.id,
+              title: m.title,
+              subtitle: m.description ?? undefined,
+              onPress: () => router.push({ pathname: "/medicines/[id]", params: { id: m.id } }),
+            })),
+          }
+        : {
+            placeholder: "ค้นหาด้วยชื่อแม่พันธุ์หรือยา",
+            emptyText: "ไม่พบประวัติการใช้ยา",
+            items: usage.map((u) => ({
+              key: u.id,
+              title: u.medicine ?? "ไม่ระบุยา",
+              subtitle: `${u.sow_name} · ${thaiDateLong(u.used_at, true)}`,
+              onPress: () => router.push({ pathname: "/sows/[id]", params: { id: u.sow_id } }),
+            })),
+          },
+  });
 
   const header = (
     <View style={{ gap: 12 }}>
@@ -41,17 +64,17 @@ export default function Medicines() {
           { value: "usage", label: "ประวัติใช้ยา" },
         ]}
       />
-      <SearchBar value={query} onChange={setQuery} placeholder={tab === "stock" ? "ค้นหาด้วยชื่อยาหรือวัคซีน" : "ค้นหาด้วยชื่อแม่พันธุ์หรือยา"} />
     </View>
   );
 
   return (
     <View style={screen.root}>
+      {tools}
       {tab === "stock" ? (
         <FlatList
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={[screen.content, { paddingBottom: 96 }]}
-          data={medicines.filter((m) => !q || m.title.toLowerCase().includes(q))}
+          contentContainerStyle={screen.content}
+          data={medicines}
           keyExtractor={(m) => m.id}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={header}
@@ -78,7 +101,7 @@ export default function Medicines() {
         <FlatList
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={screen.content}
-          data={usage.filter((u) => !q || u.sow_name.toLowerCase().includes(q) || (u.medicine ?? "").toLowerCase().includes(q))}
+          data={usage}
           keyExtractor={(u) => u.id}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={header}
@@ -93,7 +116,6 @@ export default function Medicines() {
           )}
         />
       )}
-      {tab === "stock" && <Fab label="เพิ่มยา" onPress={() => router.push({ pathname: "/medicines/[id]", params: { id: "new" } })} />}
     </View>
   );
 }

@@ -1,9 +1,8 @@
 import { useQuery } from "@powersync/react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
-import { useConfirm } from "../../components/Drawer";
-import { SubmitButton } from "../../components/Form";
+import { ScrollView, StyleSheet } from "react-native";
+import { DeleteButton, SubmitButton } from "../../components/Form";
 import { createBoar, deleteBoar, saveErrorMessage, updateBoar } from "../../db/mutations";
 import { useOnline } from "../../db/useOnline";
 import { Text, TextInput } from "../../theme";
@@ -55,12 +54,7 @@ function BoarForm({ id, isNew, boar }: { id: string; isNew: boolean; boar: BoarD
     run(() => (isNew ? createBoar(input) : updateBoar(id, input)), !isNew);
   };
 
-  const [confirmDrawer, confirm] = useConfirm();
-  const confirmDelete = () =>
-    confirm({ title: "ลบพ่อพันธุ์", message: `ต้องการลบ ${boar?.breed} หรือไม่`, confirmLabel: "ลบพ่อพันธุ์", onConfirm: () => run(() => deleteBoar(id)) });
-
   const uses = (boar?.breedings ?? 0) + (boar?.litters ?? 0);
-  const inUse = uses > 0;
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
@@ -78,18 +72,16 @@ function BoarForm({ id, isNew, boar }: { id: string; isNew: boolean; boar: BoarD
       {error && <Text style={s.error}>{error}</Text>}
       <SubmitButton title={isNew ? "เพิ่มพ่อพันธุ์" : "บันทึก"} online={online} busy={busy} onPress={save} />
       {!isNew && boar && (
-        <>
-          <Pressable
-            onPress={confirmDelete}
-            disabled={inUse || !online || busy}
-            style={({ pressed }) => [s.delete, (inUse || !online) && { opacity: 0.4 }, pressed && { opacity: 0.6 }]}
-          >
-            <Text style={s.deleteText}>ลบพ่อพันธุ์</Text>
-          </Pressable>
-          {inUse && <Text style={s.hint}>ลบไม่ได้ เพราะมีประวัติการผสมหรือครอกที่ใช้พ่อพันธุ์นี้ ({uses} รายการ)</Text>}
-        </>
+        <DeleteButton
+          label="ลบพ่อพันธุ์"
+          title="ลบพ่อพันธุ์"
+          message={`ต้องการลบ ${boar.breed} หรือไม่`}
+          online={online}
+          busy={busy}
+          blockedReason={uses > 0 ? `ลบไม่ได้ เพราะมีประวัติการผสมหรือครอกที่ใช้พ่อพันธุ์นี้ (${uses} รายการ)` : undefined}
+          onConfirm={() => run(() => deleteBoar(id))}
+        />
       )}
-      {confirmDrawer}
     </ScrollView>
   );
 }
@@ -100,7 +92,4 @@ const s = StyleSheet.create({
   input: { backgroundColor: "#f5f5f4", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
   multiline: { minHeight: 88, textAlignVertical: "top" },
   error: { color: "#dc2626", textAlign: "center", marginTop: 8 },
-  delete: { alignItems: "center", paddingVertical: 14, marginTop: 8 },
-  deleteText: { color: "#dc2626", fontSize: 16, fontWeight: "600" },
-  hint: { textAlign: "center", color: "#737373" },
 });

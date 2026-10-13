@@ -100,7 +100,7 @@ export function Button(props: {
   );
 }
 
-export function SearchBar(props: { value: string; onChange: (v: string) => void; placeholder: string }) {
+export function SearchBar(props: { value: string; onChange: (v: string) => void; placeholder: string; autoFocus?: boolean }) {
   return (
     <View style={s.search}>
       <Search size={20} color={color.mutedForeground} />
@@ -111,6 +111,7 @@ export function SearchBar(props: { value: string; onChange: (v: string) => void;
         placeholder={props.placeholder}
         autoCorrect={false}
         clearButtonMode="while-editing"
+        autoFocus={props.autoFocus}
       />
     </View>
   );

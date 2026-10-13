@@ -1,5 +1,16 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, Easing, Modal, Pressable, StyleSheet, useAnimatedValue, useWindowDimensions, View, type GestureResponderEvent } from "react-native";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  Animated,
+  Easing,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  useAnimatedValue,
+  useWindowDimensions,
+  View,
+  type GestureResponderEvent,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { color, Text } from "../theme";
 import { useReducedMotion } from "./motion";
@@ -7,10 +18,20 @@ import { Button } from "./ui";
 import { haptic } from "../lib/haptics";
 
 const DISMISS_DISTANCE = 80;
+const OPEN_MS = 300;
 const CLOSE_MS = 220;
 
 // Matches the web's vaul drawer: slides up from the bottom, drag the handle or title down to close.
-export function Drawer(props: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+// heightRatio gives the sheet a fixed share of the screen, for content like search that should not resize with its results.
+// onClosed fires once the Modal itself is gone (iOS onDismiss), which is when navigation can safely present.
+export function Drawer(props: {
+  open: boolean;
+  onClose: () => void;
+  onClosed?: () => void;
+  title: string;
+  heightRatio?: number;
+  children: ReactNode;
+}) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
@@ -18,6 +39,11 @@ export function Drawer(props: { open: boolean; onClose: () => void; title: strin
   const offset = useAnimatedValue(height);
   const drag = useAnimatedValue(0);
   const dragStart = useRef(0);
+  const onClosed = useRef(props.onClosed);
+
+  useEffect(() => {
+    onClosed.current = props.onClosed;
+  });
 
   if (props.open && !mounted) setMounted(true);
 
@@ -26,12 +52,15 @@ export function Drawer(props: { open: boolean; onClose: () => void; title: strin
     if (props.open) {
       drag.setValue(0);
       if (reduced) offset.setValue(0);
-      else Animated.spring(offset, { toValue: 0, useNativeDriver: true, speed: 16, bounciness: 2 }).start();
+      else Animated.timing(offset, { toValue: 0, duration: OPEN_MS, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       return;
     }
     if (reduced) offset.setValue(height);
     else Animated.timing(offset, { toValue: height, duration: CLOSE_MS, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start();
-    const t = setTimeout(() => setMounted(false), reduced ? 0 : CLOSE_MS);
+    const t = setTimeout(() => {
+      setMounted(false);
+      if (Platform.OS !== "ios") onClosed.current?.();
+    }, reduced ? 0 : CLOSE_MS);
     return () => clearTimeout(t);
   }, [props.open, mounted, height, offset, drag, reduced]);
 
@@ -45,23 +74,46 @@ export function Drawer(props: { open: boolean; onClose: () => void; title: strin
       if (e.nativeEvent.pageY - dragStart.current > DISMISS_DISTANCE) props.onClose();
       else Animated.spring(drag, { toValue: 0, useNativeDriver: true }).start();
     },
+    onResponderTerminate: () => Animated.spring(drag, { toValue: 0, useNativeDriver: true }).start(),
   };
 
-  const translateY = Animated.add(offset, drag);
-  const backdrop = offset.interpolate({ inputRange: [0, height], outputRange: [0.4, 0], extrapolate: "clamp" });
+  // Built once per sheet so a re-render mid-animation (e.g. picking a filter) keeps the same native nodes.
+  const translateY = useMemo(() => Animated.add(offset, drag), [offset, drag]);
+  const backdrop = useMemo(
+    () => offset.interpolate({ inputRange: [0, height], outputRange: [0.4, 0], extrapolate: "clamp" }),
+    [offset, height]
+  );
 
   return (
-    <Modal visible={mounted} transparent animationType="none" onRequestClose={props.onClose} statusBarTranslucent>
+    <Modal
+      visible={mounted}
+      transparent
+      animationType="none"
+      onRequestClose={props.onClose}
+      onDismiss={() => onClosed.current?.()}
+      statusBarTranslucent
+    >
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "#000", opacity: backdrop }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={props.onClose} accessibilityLabel="ปิด" />
       </Animated.View>
-      <Animated.View style={[s.sheet, { paddingBottom: insets.bottom + 16, transform: [{ translateY }] }]} accessibilityViewIsModal>
-        <View {...handlers}>
-          <View style={s.handle} />
-          <Text style={s.title}>{props.title}</Text>
-        </View>
-        {props.children}
-      </Animated.View>
+      {/* While closing, nothing inside takes touches, so a second tap cannot confirm twice. */}
+      <View style={[s.frame, { paddingTop: insets.top + 24 }]} pointerEvents={props.open ? "box-none" : "none"}>
+        <Animated.View
+          style={[
+            s.sheet,
+            { maxHeight: "100%" },
+            props.heightRatio ? { height: height * props.heightRatio } : null,
+            { paddingBottom: insets.bottom + 16, transform: [{ translateY }] },
+          ]}
+          accessibilityViewIsModal
+        >
+          <View {...handlers}>
+            <View style={s.handle} />
+            <Text style={s.title}>{props.title}</Text>
+          </View>
+          {props.children}
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -72,18 +124,28 @@ type ConfirmOptions = { title: string; message: string; confirmLabel: string; on
 export function useConfirm() {
   const [options, setOptions] = useState<ConfirmOptions | null>(null);
   const [open, setOpen] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const close = () => setOpen(false);
 
+  // The action runs once the drawer is gone, so a delete that navigates never races the closing Modal.
   const element = (
-    <Drawer open={open} onClose={close} title={options?.title ?? ""}>
+    <Drawer
+      open={open}
+      onClose={close}
+      onClosed={() => {
+        if (confirmed) options?.onConfirm();
+        setConfirmed(false);
+      }}
+      title={options?.title ?? ""}
+    >
       <Text style={s.message}>{options?.message}</Text>
       <View style={s.actions}>
         <Button
           title={options?.confirmLabel ?? ""}
           variant="destructive"
           onPress={() => {
+            setConfirmed(true);
             close();
-            options?.onConfirm();
           }}
         />
         <Button title="ยกเลิก" variant="secondary" onPress={close} />
@@ -101,11 +163,8 @@ export function useConfirm() {
 }
 
 const s = StyleSheet.create({
+  frame: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "flex-end" },
   sheet: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
     backgroundColor: color.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

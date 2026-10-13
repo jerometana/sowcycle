@@ -72,6 +72,36 @@ export const startFattening = (litterId: string, fatteningAt: Date) =>
       .eq("id", Number(litterId))
   );
 
+export type LitterInput = {
+  birthDate: Date;
+  male: number;
+  female: number;
+  fatteningAt: Date | null;
+  soldAt: Date | null;
+  avgWeight: number | null;
+};
+
+// Mirrors the web's litter edit: the total follows the two counts, and the sale due date follows fattening.
+export const updateLitter = (litterId: string, input: LitterInput) =>
+  runWrite(
+    supabase
+      .from("litters")
+      .update({
+        birth_date: input.birthDate.toISOString(),
+        piglets_male_born_alive: input.male,
+        piglets_female_born_alive: input.female,
+        piglets_born_count: input.male + input.female,
+        fattening_at: input.fatteningAt?.toISOString() ?? null,
+        saleable_at: input.fatteningAt ? saleableDate(input.fatteningAt).toISOString() : null,
+        sold_at: input.soldAt?.toISOString() ?? null,
+        avg_weight: input.avgWeight,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", Number(litterId))
+  );
+
+export const deleteLitter = (litterId: string) => runWrite(supabase.from("litters").delete().eq("id", Number(litterId)));
+
 export const recordSale = (litterId: string, soldAt: Date, avgWeight: number | null) =>
   runWrite(
     supabase
@@ -109,6 +139,25 @@ export const updateBoar = (id: string, input: BoarInput) =>
   runWrite(supabase.from("boars").update({ ...input, updated_at: new Date().toISOString() }).eq("id", Number(id)));
 
 export const deleteBoar = (id: string) => runWrite(supabase.from("boars").delete().eq("id", Number(id)));
+
+export type SowInput = {
+  name: string;
+  breasts_count: number | null;
+  birth_date: string | null;
+  add_date: string | null;
+  is_active: boolean;
+};
+
+export const createSow = async (input: SowInput) => {
+  const { data } = await supabase.auth.getSession();
+  return runWrite(supabase.from("sows").insert({ ...input, user_id: data.session?.user.id }));
+};
+
+export const updateSow = (id: string, input: SowInput) =>
+  runWrite(supabase.from("sows").update({ ...input, updated_at: new Date().toISOString() }).eq("id", Number(id)));
+
+// The database cascades this to the sow's breedings, litters, treatments and breed links.
+export const deleteSow = (id: string) => runWrite(supabase.from("sows").delete().eq("id", Number(id)));
 
 export type MedicineInput = { title: string; description: string; stock_count: number };
 

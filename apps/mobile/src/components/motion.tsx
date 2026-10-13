@@ -21,10 +21,18 @@ export const motion = {
   maxStagger: 8,
 } as const;
 
+// Read once at startup and kept current, so a component mounting later knows the setting on its first frame.
+let reduceMotion = false;
+AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+  reduceMotion = v;
+});
+AccessibilityInfo.addEventListener("reduceMotionChanged", (v) => {
+  reduceMotion = v;
+});
+
 export function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
+  const [reduced, setReduced] = useState(reduceMotion);
   useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduced);
     const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduced);
     return () => sub.remove();
   }, []);
