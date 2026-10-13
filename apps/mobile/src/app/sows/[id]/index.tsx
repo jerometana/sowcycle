@@ -5,6 +5,7 @@ import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ColumnChart, type ChartPoint } from "../../../components/ColumnChart";
+import { Dropdown } from "../../../components/Dropdown";
 import { Drawer, useConfirm } from "../../../components/Drawer";
 import { Button, Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../../components/ui";
 import { deleteTreatment, saveErrorMessage } from "../../../db/mutations";
@@ -225,20 +226,15 @@ export default function SowDetail() {
 
       {tab === "history" && (
         <>
-          <View style={s.filters}>
-            {(
-              [
-                ["all", "ทั้งหมด", null],
-                ["breedings", `การผสม (${breedings.length})`, Heart],
-                ["treatments", `การใช้ยา (${treatments.length})`, Syringe],
-              ] as const
-            ).map(([value, label, Icon]) => (
-              <Pressable key={value} onPress={() => setFilter(value)} style={[s.filter, filter === value && s.filterActive]}>
-                {Icon && <Icon size={14} color={filter === value ? color.primary : color.foreground} />}
-                <Text style={[s.filterText, filter === value && { color: color.primary }]}>{label}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Dropdown
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { key: "all", label: "ทั้งหมด" },
+              { key: "breedings", label: `การผสม (${breedings.length})` },
+              { key: "treatments", label: `การใช้ยา (${treatments.length})` },
+            ]}
+          />
           {!online && <Text style={s.offline}>ออฟไลน์ ดูข้อมูลได้ แต่ต้องมีสัญญาณเพื่อบันทึก</Text>}
           {history.length === 0 && <EmptyText>ยังไม่มีประวัติ</EmptyText>}
           {history.map((h) =>
@@ -380,9 +376,5 @@ const s = StyleSheet.create({
   breedBox: { flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: color.secondary, borderRadius: 16, padding: 12 },
   whiteSquare: { width: 48, height: 48, borderRadius: 14, backgroundColor: color.card, alignItems: "center", justifyContent: "center" },
   sexChip: { color: color.primaryForeground, fontSize: 12, paddingHorizontal: 8, paddingVertical: 1, borderRadius: 999, overflow: "hidden" },
-  filters: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  filter: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: color.card, borderWidth: 1, borderColor: color.card },
-  filterActive: { borderColor: color.primary, backgroundColor: "#fdf2f8" },
-  filterText: { fontSize: 14, fontWeight: "500", color: color.foreground },
   offline: { backgroundColor: "#fef3c7", color: "#92400e", padding: 10, borderRadius: 12, textAlign: "center" },
 });
