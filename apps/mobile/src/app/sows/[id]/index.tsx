@@ -83,19 +83,21 @@ const saleWeightPoints = (litters: SoldLitterRow[]): ChartPoint[] =>
     .sort((a, b) => a.sold_at!.localeCompare(b.sold_at!))
     .map((l) => ({ key: l.id, label: thaiMonthYear(l.sold_at!), value: l.avg_weight! }));
 
-type Tab = "details" | "history";
+type Tab = "stats" | "history";
 type HistoryFilter = "all" | "breedings" | "treatments";
 
 export default function SowDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const online = useOnline();
-  const [tab, setTab] = useState<Tab>("details");
+  const [tab, setTab] = useState<Tab>("stats");
   const [filter, setFilter] = useState<HistoryFilter>("all");
   const { data: sows } = useQuery<SowRow>("select name, breasts_count, birth_date, add_date from sows where id = ?", [id]);
   const { data: breedings } = useQuery<BreedingRow>(BREEDINGS, [id]);
   const { data: treatments } = useQuery<TreatmentRow>(TREATMENTS, [id]);
   const { data: litters } = useQuery<SoldLitterRow>("select id, sold_at, avg_weight from litters where sow_id = ?", [id]);
   const sow = sows[0];
+  const piglets = pigletPoints(breedings);
+  const saleWeights = saleWeightPoints(litters);
   const openPregnancy = breedings.find((b) => stageOf(b) === "pregnant");
   const breed = breedings.find((b) => b.boar_breed)?.boar_breed;
 
@@ -135,62 +137,67 @@ export default function SowDetail() {
           ),
         }}
       />
+
+      {sow && (
+        <Card>
+          <View style={s.nameRow}>
+            <Text style={s.name} numberOfLines={2}>
+              {sow.name}
+            </Text>
+            <PressableScale
+              hitSlop={8}
+              accessibilityLabel="แก้ไขแม่พันธุ์"
+              onPress={() => {
+                haptic.tap();
+                router.push({ pathname: "/sows/[id]/edit", params: { id } });
+              }}
+              style={s.roundButton}
+            >
+              <Pencil size={18} color={color.gray600} />
+            </PressableScale>
+          </View>
+          <InfoRow icon={Heart} label="สถานะ" tint={openPregnancy ? color.primary : color.mutedForeground}>
+            {openPregnancy ? (
+              <View style={s.statusRow}>
+                <Text style={[s.value, { color: color.primary }]}>ตั้งครรภ์</Text>
+                <Text style={s.badge}>{`คลอดใน ${daysUntil(openPregnancy.expected_farrow_date)} วัน`}</Text>
+              </View>
+            ) : (
+              "ว่าง"
+            )}
+          </InfoRow>
+          <InfoRow icon={Milk} label="จำนวนเต้านม">{sow.breasts_count ? `${sow.breasts_count} เต้า` : "-"}</InfoRow>
+          <InfoRow icon={Cake} label="วันเกิด">{sow.birth_date ? thaiDateLong(sow.birth_date, true) : "-"}</InfoRow>
+          <InfoRow icon={House} label="รับเข้าเมื่อ">{sow.add_date ? thaiDateLong(sow.add_date, true) : "-"}</InfoRow>
+          {breed && (
+            <Pressable onPress={() => router.push("/boars")} style={s.breedBox}>
+              <View style={s.whiteSquare}>
+                <Dna size={24} color={color.mutedForeground} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.label}>สายพันธุ์</Text>
+                <Text>{breed}</Text>
+              </View>
+              <ChevronRight size={20} color={color.mutedForeground} />
+            </Pressable>
+          )}
+        </Card>
+      )}
+
       <Segmented
         value={tab}
         onChange={setTab}
         options={[
-          { value: "details", label: "รายละเอียด" },
-          { value: "history", label: "บันทึกประวัติ" },
+          { value: "stats", label: "สถิติ" },
+          { value: "history", label: "ประวัติ" },
         ]}
       />
 
-      {tab === "details" && sow && (
+      {tab === "stats" && (
         <>
-          <Card>
-            <View style={s.nameRow}>
-              <Text style={s.name} numberOfLines={2}>
-                {sow.name}
-              </Text>
-              <PressableScale
-                hitSlop={8}
-                accessibilityLabel="แก้ไขแม่พันธุ์"
-                onPress={() => {
-                  haptic.tap();
-                  router.push({ pathname: "/sows/[id]/edit", params: { id } });
-                }}
-                style={s.roundButton}
-              >
-                <Pencil size={18} color={color.gray600} />
-              </PressableScale>
-            </View>
-            <InfoRow icon={Heart} label="สถานะ" tint={openPregnancy ? color.primary : color.mutedForeground}>
-              {openPregnancy ? (
-                <View style={s.statusRow}>
-                  <Text style={[s.value, { color: color.primary }]}>ตั้งครรภ์</Text>
-                  <Text style={s.badge}>{`คลอดใน ${daysUntil(openPregnancy.expected_farrow_date)} วัน`}</Text>
-                </View>
-              ) : (
-                "ว่าง"
-              )}
-            </InfoRow>
-            <InfoRow icon={Milk} label="จำนวนเต้านม">{sow.breasts_count ? `${sow.breasts_count} เต้า` : "-"}</InfoRow>
-            <InfoRow icon={Cake} label="วันเกิด">{sow.birth_date ? thaiDateLong(sow.birth_date, true) : "-"}</InfoRow>
-            <InfoRow icon={House} label="รับเข้าเมื่อ">{sow.add_date ? thaiDateLong(sow.add_date, true) : "-"}</InfoRow>
-            {breed && (
-              <Pressable onPress={() => router.push("/boars")} style={s.breedBox}>
-                <View style={s.whiteSquare}>
-                  <Dna size={24} color={color.mutedForeground} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.label}>สายพันธุ์</Text>
-                  <Text>{breed}</Text>
-                </View>
-                <ChevronRight size={20} color={color.mutedForeground} />
-              </Pressable>
-            )}
-          </Card>
-          <ColumnChart title="จำนวนลูกมีชีวิตต่อครอก" unit="ตัว" points={pigletPoints(breedings)} />
-          <ColumnChart title="น้ำหนักขายเฉลี่ยต่อครอก (กก.)" unit="กก." points={saleWeightPoints(litters)} />
+          <ColumnChart title="จำนวนลูกมีชีวิตต่อครอก" unit="ตัว" points={piglets} />
+          <ColumnChart title="น้ำหนักขายเฉลี่ยต่อครอก (กก.)" unit="กก." points={saleWeights} />
+          {piglets.length < 2 && saleWeights.length < 2 && <EmptyText>ยังมีข้อมูลไม่พอสำหรับกราฟ</EmptyText>}
         </>
       )}
 
