@@ -110,6 +110,7 @@ function SowForm({ id, isNew, sow }: { id: string; isNew: boolean; sow: SowDetai
             setActive(v);
           }}
           trackColor={{ true: color.primary }}
+          thumbColor="#ffffff"
         />
       </View>
       {error && <Text style={s.error}>{error}</Text>}
