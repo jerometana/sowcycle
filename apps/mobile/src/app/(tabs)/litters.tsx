@@ -53,31 +53,28 @@ export default function Litters() {
     (l) => LITTER_FILTERS[filter].test(litterStage(l)) && (breed === ALL_BREEDS || l.breed === breed)
   );
   const tools = useHeaderTools({
-    filter: {
-      title: "กรองครอก",
-      groups: [
-        {
-          key: "stage",
-          label: "สถานะ",
-          options: (Object.keys(LITTER_FILTERS) as LitterFilter[]).map((key) => ({ key, label: LITTER_FILTERS[key].label })),
-          value: filter,
-          defaultValue: "unsold",
-          onChange: (key) => setFilter(key as LitterFilter),
-        },
-        {
-          key: "breed",
-          label: "สายพันธุ์พ่อพันธุ์",
-          options: [{ key: ALL_BREEDS, label: "ทุกสายพันธุ์" }, ...breeds.map((b) => ({ key: b, label: b }))],
-          value: breed,
-          defaultValue: ALL_BREEDS,
-          onChange: setBreed,
-        },
-      ],
-    },
+    filters: [
+      {
+        key: "stage",
+        label: "สถานะ",
+        options: (Object.keys(LITTER_FILTERS) as LitterFilter[]).map((key) => ({ key, label: LITTER_FILTERS[key].label })),
+        value: filter,
+        defaultValue: "unsold",
+        onChange: (key) => setFilter(key as LitterFilter),
+      },
+      {
+        key: "breed",
+        label: "สายพันธุ์พ่อพันธุ์",
+        options: [{ key: ALL_BREEDS, label: "ทุกสายพันธุ์" }, ...breeds.map((b) => ({ key: b, label: b }))],
+        value: breed,
+        defaultValue: ALL_BREEDS,
+        onChange: setBreed,
+      },
+    ],
     search: {
       placeholder: "ค้นหาด้วยชื่อแม่พันธุ์",
       emptyText: "ไม่พบครอก",
-      items: data.map((l) => ({
+      items: litters.map((l) => ({
         key: l.id,
         title: `ลูกขุนแม่${l.sow_name}`,
         subtitle: [LITTER_STAGE_LABEL[litterStage(l)].text, l.birth_date && `คลอด ${thaiDateLong(l.birth_date)}`].filter(Boolean).join(" · "),

@@ -1,5 +1,5 @@
 import { useStatus } from "@powersync/react-native";
-import { FlatList } from "react-native";
+import { FlatList, View } from "react-native";
 import { SowCard } from "../../components/SowCard";
 import { EmptyText, screen } from "../../components/ui";
 import { useSowCards } from "../../db/sowCards";
@@ -26,23 +26,21 @@ export default function SowList() {
   const [filter, setFilter] = useState<SowFilter>("active");
   const shown = sows.filter(SOW_FILTERS[filter].test);
   const tools = useHeaderTools({
-    filter: {
-      title: "กรองแม่พันธุ์",
-      groups: [
-        {
-          key: "status",
-          label: "สถานะ",
-          options: (Object.keys(SOW_FILTERS) as SowFilter[]).map((key) => ({ key, label: SOW_FILTERS[key].label })),
-          value: filter,
-          defaultValue: "active",
-          onChange: (key) => setFilter(key as SowFilter),
-        },
-      ],
-    },
+    add: { label: "เพิ่มแม่พันธุ์", onPress: () => router.push({ pathname: "/sows/[id]/edit", params: { id: "new" } }) },
+    filters: [
+      {
+        key: "status",
+        label: "สถานะ",
+        options: (Object.keys(SOW_FILTERS) as SowFilter[]).map((key) => ({ key, label: SOW_FILTERS[key].label })),
+        value: filter,
+        defaultValue: "active",
+        onChange: (key) => setFilter(key as SowFilter),
+      },
+    ],
     search: {
       placeholder: "ค้นหาด้วยชื่อแม่พันธุ์",
       emptyText: "ไม่พบแม่พันธุ์",
-      items: sows.map((sow) => ({
+      items: shown.map((sow) => ({
         key: sow.id,
         title: sow.name,
         subtitle: sow.breed ?? undefined,
@@ -52,7 +50,7 @@ export default function SowList() {
   });
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       {tools}
       <FlatList
       contentInsetAdjustmentBehavior="automatic"
@@ -77,6 +75,6 @@ export default function SowList() {
         </FadeIn>
       )}
       />
-    </>
+    </View>
   );
 }

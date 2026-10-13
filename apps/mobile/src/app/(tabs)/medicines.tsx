@@ -2,7 +2,6 @@ import { useQuery } from "@powersync/react-native";
 import { router } from "expo-router";
 import { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
-import { Fab } from "../../components/Fab";
 import { Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../components/ui";
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
@@ -30,6 +29,10 @@ export default function Medicines() {
   const { data: medicines } = useQuery<MedicineRow>(MEDICINES);
   const { data: usage } = useQuery<UsageRow>(USAGE);
   const tools = useHeaderTools({
+    add:
+      tab === "stock"
+        ? { label: "เพิ่มยา", onPress: () => router.push({ pathname: "/medicines/[id]", params: { id: "new" } }) }
+        : undefined,
     search:
       tab === "stock"
         ? {
@@ -73,7 +76,7 @@ export default function Medicines() {
       {tab === "stock" ? (
         <FlatList
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={[screen.content, { paddingBottom: 96 }]}
+          contentContainerStyle={screen.content}
           data={medicines}
           keyExtractor={(m) => m.id}
           keyboardShouldPersistTaps="handled"
@@ -116,7 +119,6 @@ export default function Medicines() {
           )}
         />
       )}
-      {tab === "stock" && <Fab label="เพิ่มยา" onPress={() => router.push({ pathname: "/medicines/[id]", params: { id: "new" } })} />}
     </View>
   );
 }

@@ -22,11 +22,13 @@ import {
   Heart,
   House,
   Milk,
+  Pencil,
   PiggyBank,
   Plus,
   Syringe,
 } from "../../../theme/icons";
 import { haptic } from "../../../lib/haptics";
+import { PressableScale } from "../../../components/motion";
 
 type SowRow = { name: string; breasts_count: number | null; birth_date: string | null; add_date: string | null };
 
@@ -103,7 +105,24 @@ export default function SowDetail() {
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={screen.content}>
-      <Stack.Screen options={{ title: sow?.name ?? "" }} />
+      <Stack.Screen
+        options={{
+          title: sow?.name ?? "",
+          headerRight: () => (
+            <PressableScale
+              hitSlop={8}
+              accessibilityLabel="แก้ไขแม่พันธุ์"
+              onPress={() => {
+                haptic.tap();
+                router.push({ pathname: "/sows/[id]/edit", params: { id } });
+              }}
+              style={s.editButton}
+            >
+              <Pencil size={18} color={color.gray600} />
+            </PressableScale>
+          ),
+        }}
+      />
       <Segmented
         value={tab}
         onChange={setTab}
@@ -301,6 +320,7 @@ function TreatmentCard({ treatment: t }: { treatment: TreatmentRow }) {
 }
 
 const s = StyleSheet.create({
+  editButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center" },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   value: { fontSize: 16, fontWeight: "600", color: color.gray900 },
   badge: { backgroundColor: color.primary, color: color.primaryForeground, fontSize: 13, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 999, overflow: "hidden" },

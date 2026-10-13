@@ -110,6 +110,22 @@ export const updateBoar = (id: string, input: BoarInput) =>
 
 export const deleteBoar = (id: string) => runWrite(supabase.from("boars").delete().eq("id", Number(id)));
 
+export type SowInput = {
+  name: string;
+  breasts_count: number | null;
+  birth_date: string | null;
+  add_date: string | null;
+  is_active: boolean;
+};
+
+export const createSow = async (input: SowInput) => {
+  const { data } = await supabase.auth.getSession();
+  return runWrite(supabase.from("sows").insert({ ...input, user_id: data.session?.user.id }));
+};
+
+export const updateSow = (id: string, input: SowInput) =>
+  runWrite(supabase.from("sows").update({ ...input, updated_at: new Date().toISOString() }).eq("id", Number(id)));
+
 export type MedicineInput = { title: string; description: string; stock_count: number };
 
 export const createMedicine = async (input: MedicineInput) => {
