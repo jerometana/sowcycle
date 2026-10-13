@@ -3,11 +3,12 @@ import { farrowFormSchema } from "@sowcycle/core";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
 import { DateField } from "../../../components/DateField";
 import { NumberField, SubmitButton } from "../../../components/Form";
 import { recordFarrow, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
+import { Text } from "../../../theme";
 
 export default function FarrowSheet() {
   const { breedingId } = useLocalSearchParams<{ id: string; breedingId: string }>();

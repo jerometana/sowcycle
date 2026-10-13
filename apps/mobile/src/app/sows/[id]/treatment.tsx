@@ -2,11 +2,12 @@ import { useQuery } from "@powersync/react-native";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { DateField } from "../../../components/DateField";
 import { SubmitButton } from "../../../components/Form";
 import { recordTreatment, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
+import { Text, TextInput } from "../../../theme";
 
 export default function TreatmentSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();

@@ -3,13 +3,14 @@ import { litterStage, saleableDate } from "@sowcycle/core";
 import * as Haptics from "expo-haptics";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { DateField } from "../../components/DateField";
 import { NumberField, SubmitButton } from "../../components/Form";
 import { recordSale, saveErrorMessage, startFattening } from "../../db/mutations";
 import { useOnline } from "../../db/useOnline";
 import { thaiDate } from "../../lib/date";
 import { LITTER_STAGE_LABEL } from "../../lib/litterLabels";
+import { Text } from "../../theme";
 
 type LitterDetail = {
   sow_name: string;

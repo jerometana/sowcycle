@@ -1,7 +1,8 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useQuery } from "@powersync/react-native";
 import { router, Stack } from "expo-router";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "../../theme";
 
 type BoarRow = { id: string; breed: string; description: string | null; breedings: number };
 

@@ -1,15 +1,8 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { Button } from "../components/ui";
 import { supabase } from "../lib/supabase";
+import { color, Text, TextInput } from "../theme";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,66 +19,58 @@ export default function Login() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={s.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={s.card}>
-        <Text style={s.title}>SowCycle</Text>
-        <TextInput
-          style={s.input}
-          placeholder="อีเมล"
-          autoCapitalize="none"
-          autoComplete="email"
-          autoCorrect={false}
-          textContentType="emailAddress"
-          returnKeyType="next"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={s.input}
-          placeholder="รหัสผ่าน"
-          secureTextEntry
-          autoComplete="password"
-          textContentType="password"
-          returnKeyType="go"
-          value={password}
-          onChangeText={setPassword}
-          onSubmitEditing={signIn}
-        />
-        {error && <Text style={s.error}>{error}</Text>}
-        <Pressable
-          style={({ pressed }) => [s.button, pressed && { opacity: 0.8 }]}
-          onPress={signIn}
-          disabled={busy}
-        >
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>เข้าสู่ระบบ</Text>}
-        </Pressable>
-      </View>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+        <View style={s.card}>
+          <Image source={require("../../assets/logo.png")} style={s.logo} />
+          <Text style={s.title}>Login to SowCycle</Text>
+          <View style={s.field}>
+            <Text style={s.label}>Email Address</Text>
+            <TextInput
+              style={s.input}
+              placeholder="yourname@example.com"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              textContentType="emailAddress"
+              keyboardType="email-address"
+              returnKeyType="next"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
+          <View style={s.field}>
+            <Text style={s.label}>Password</Text>
+            <TextInput
+              style={s.input}
+              placeholder="Enter your password"
+              secureTextEntry
+              autoComplete="password"
+              textContentType="password"
+              returnKeyType="go"
+              value={password}
+              onChangeText={setPassword}
+              onSubmitEditing={signIn}
+            />
+          </View>
+          {error && <Text style={s.error}>{error}</Text>}
+          <Button title="Login" onPress={signIn} busy={busy} />
+        </View>
+        <Text style={s.terms}>By continuing, you agree to our Terms of Service and Privacy Policy</Text>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, justifyContent: "center", backgroundColor: "#f5f5f4", padding: 24 },
-  card: { gap: 12 },
-  title: { fontSize: 32, fontWeight: "700", textAlign: "center", marginBottom: 16 },
-  input: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-  },
-  error: { color: "#dc2626", textAlign: "center" },
-  button: {
-    backgroundColor: "#ec4899",
-    borderRadius: 999,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonText: { color: "#fff", fontSize: 17, fontWeight: "600" },
+  root: { flex: 1, backgroundColor: color.background },
+  scroll: { flexGrow: 1, justifyContent: "center", padding: 16, gap: 16 },
+  card: { backgroundColor: color.card, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 32, gap: 16 },
+  logo: { width: 64, height: 64, borderRadius: 16, alignSelf: "center" },
+  title: { fontSize: 30, fontWeight: "700", textAlign: "center", marginBottom: 8 },
+  field: { gap: 6 },
+  label: { fontSize: 14, fontWeight: "500" },
+  input: { borderWidth: 1, borderColor: color.border, borderRadius: 999, paddingHorizontal: 16, height: 44, fontSize: 16 },
+  error: { color: color.destructive, textAlign: "center" },
+  terms: { textAlign: "center", color: color.mutedForeground, fontSize: 13, paddingHorizontal: 24 },
 });
