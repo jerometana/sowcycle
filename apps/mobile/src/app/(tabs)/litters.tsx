@@ -47,8 +47,10 @@ type LitterFilter = keyof typeof LITTER_FILTERS;
 export default function Litters() {
   const [filter, setFilter] = useState<LitterFilter>("unsold");
   const { data } = useQuery<LitterRow>(LITTERS);
-  const [breed, setBreed] = useState(ALL_BREEDS);
+  const [chosenBreed, setBreed] = useState(ALL_BREEDS);
   const breeds = [...new Set(data.map((l) => l.breed).filter((b): b is string => !!b))].sort((a, b) => a.localeCompare(b, "th"));
+  // A breed whose last litter was deleted falls back to all, rather than leaving an empty list behind a blank filter.
+  const breed = breeds.includes(chosenBreed) ? chosenBreed : ALL_BREEDS;
   const litters = data.filter(
     (l) => LITTER_FILTERS[filter].test(litterStage(l)) && (breed === ALL_BREEDS || l.breed === breed)
   );

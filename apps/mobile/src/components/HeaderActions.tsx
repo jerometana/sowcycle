@@ -111,12 +111,10 @@ function SearchDrawer(props: { open: boolean; onClose: () => void; search: Searc
   return (
     <Drawer
       open={props.open}
-      onClose={() => {
+      onClose={props.onClose}
+      onClosed={() => {
         setExpanded(null);
         setShowFilters(false);
-        props.onClose();
-      }}
-      onClosed={() => {
         setQuery("");
         pending.current?.();
         pending.current = null;

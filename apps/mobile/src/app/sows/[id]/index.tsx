@@ -317,34 +317,34 @@ function BreedingCard({ breeding: b, number }: { breeding: BreedingRow; number: 
 
 function TreatmentCard({ treatment: t }: { treatment: TreatmentRow }) {
   const [confirmDrawer, confirm] = useConfirm();
-  const confirmDelete = () => {
-    haptic.longPress();
+  const confirmDelete = () =>
     confirm({
       title: "ลบประวัติการรักษา",
       message: `ลบการใช้ ${t.medicine ?? "ยา"} วันที่ ${thaiDateLong(t.used_at, true)} หรือไม่`,
       confirmLabel: "ลบ",
       onConfirm: () =>
         deleteTreatment(t.id)
-          .then(haptic.success)
+          .then(() => haptic.success())
           .catch((e) => {
             haptic.error();
             Alert.alert("ลบไม่สำเร็จ", saveErrorMessage(e));
           }),
     });
-  };
   return (
-    <Pressable onLongPress={confirmDelete} delayLongPress={400}>
-      <Card>
-        <CardHeader
-          title={t.medicine ?? "ไม่ระบุยา"}
-          chevron={false}
-          subtitle={<Text style={s.muted}>{thaiDateLong(t.used_at, true)}</Text>}
-        />
-        {!!t.symptoms && <InfoRow icon={Activity} label="อาการ">{t.symptoms}</InfoRow>}
-        {!!t.notes && <Text style={s.muted}>{t.notes}</Text>}
-      </Card>
+    <>
+      <Pressable onLongPress={confirmDelete} delayLongPress={400}>
+        <Card>
+          <CardHeader
+            title={t.medicine ?? "ไม่ระบุยา"}
+            chevron={false}
+            subtitle={<Text style={s.muted}>{thaiDateLong(t.used_at, true)}</Text>}
+          />
+          {!!t.symptoms && <InfoRow icon={Activity} label="อาการ">{t.symptoms}</InfoRow>}
+          {!!t.notes && <Text style={s.muted}>{t.notes}</Text>}
+        </Card>
+      </Pressable>
       {confirmDrawer}
-    </Pressable>
+    </>
   );
 }
 

@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   useAnimatedValue,
@@ -22,7 +23,7 @@ const CLOSE_MS = 220;
 
 // Matches the web's vaul drawer: slides up from the bottom, drag the handle or title down to close.
 // heightRatio gives the sheet a fixed share of the screen, for content like search that should not resize with its results.
-// onClosed fires once the sheet has left the screen, which is when navigation can safely present.
+// onClosed fires once the Modal itself is gone (iOS onDismiss), which is when navigation can safely present.
 export function Drawer(props: {
   open: boolean;
   onClose: () => void;
@@ -58,7 +59,7 @@ export function Drawer(props: {
     else Animated.timing(offset, { toValue: height, duration: CLOSE_MS, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start();
     const t = setTimeout(() => {
       setMounted(false);
-      onClosed.current?.();
+      if (Platform.OS !== "ios") onClosed.current?.();
     }, reduced ? 0 : CLOSE_MS);
     return () => clearTimeout(t);
   }, [props.open, mounted, height, offset, drag, reduced]);
@@ -73,6 +74,7 @@ export function Drawer(props: {
       if (e.nativeEvent.pageY - dragStart.current > DISMISS_DISTANCE) props.onClose();
       else Animated.spring(drag, { toValue: 0, useNativeDriver: true }).start();
     },
+    onResponderTerminate: () => Animated.spring(drag, { toValue: 0, useNativeDriver: true }).start(),
   };
 
   // Built once per sheet so a re-render mid-animation (e.g. picking a filter) keeps the same native nodes.
@@ -83,11 +85,19 @@ export function Drawer(props: {
   );
 
   return (
-    <Modal visible={mounted} transparent animationType="none" onRequestClose={props.onClose} statusBarTranslucent>
+    <Modal
+      visible={mounted}
+      transparent
+      animationType="none"
+      onRequestClose={props.onClose}
+      onDismiss={() => onClosed.current?.()}
+      statusBarTranslucent
+    >
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "#000", opacity: backdrop }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={props.onClose} accessibilityLabel="ปิด" />
       </Animated.View>
-      <View style={[s.frame, { paddingTop: insets.top + 24 }]} pointerEvents="box-none">
+      {/* While closing, nothing inside takes touches, so a second tap cannot confirm twice. */}
+      <View style={[s.frame, { paddingTop: insets.top + 24 }]} pointerEvents={props.open ? "box-none" : "none"}>
         <Animated.View
           style={[
             s.sheet,
@@ -114,18 +124,28 @@ type ConfirmOptions = { title: string; message: string; confirmLabel: string; on
 export function useConfirm() {
   const [options, setOptions] = useState<ConfirmOptions | null>(null);
   const [open, setOpen] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const close = () => setOpen(false);
 
+  // The action runs once the drawer is gone, so a delete that navigates never races the closing Modal.
   const element = (
-    <Drawer open={open} onClose={close} title={options?.title ?? ""}>
+    <Drawer
+      open={open}
+      onClose={close}
+      onClosed={() => {
+        if (confirmed) options?.onConfirm();
+        setConfirmed(false);
+      }}
+      title={options?.title ?? ""}
+    >
       <Text style={s.message}>{options?.message}</Text>
       <View style={s.actions}>
         <Button
           title={options?.confirmLabel ?? ""}
           variant="destructive"
           onPress={() => {
+            setConfirmed(true);
             close();
-            options?.onConfirm();
           }}
         />
         <Button title="ยกเลิก" variant="secondary" onPress={close} />

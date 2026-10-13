@@ -51,7 +51,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="sows" options={{ title: "แม่พันธุ์", tabBarIcon: tabIcon(PiggyBank) }} />
       <Tabs.Screen name="medicines" options={{ title: "ยาและวัคซีน", tabBarLabel: "ยา", tabBarIcon: tabIcon(Syringe) }} />
       <Tabs.Screen name="litters" options={{ title: "ครอกลูกหมู", tabBarLabel: "ครอก", tabBarIcon: tabIcon(Fence) }} />
-      <Tabs.Screen name="calendar" options={{ title: "กำหนดการ", tabBarIcon: tabIcon(Calendar) }} />
+      <Tabs.Screen name="calendar" options={{ title: "ปฏิทิน", tabBarIcon: tabIcon(Calendar) }} />
     </Tabs>
   );
 }

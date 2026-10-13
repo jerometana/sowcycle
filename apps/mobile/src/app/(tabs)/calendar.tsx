@@ -124,18 +124,26 @@ export default function CalendarScreen() {
   const onTouchStart = (e: GestureResponderEvent) => {
     touchStart.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
   };
-  const onTouchEnd = (e: GestureResponderEvent) => {
+  // A cancel that arrives before the finger has travelled far enough leaves the gesture open for the real end.
+  const finishSwipe = (e: GestureResponderEvent, cancelled: boolean) => {
     const start = touchStart.current;
-    touchStart.current = null;
     if (!start) return;
     const dx = e.nativeEvent.pageX - start.x;
     const dy = e.nativeEvent.pageY - start.y;
-    if (Math.abs(dx) >= SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy) * 2) changeMonth(dx < 0 ? 1 : -1);
+    const isSwipe = Math.abs(dx) >= SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy) * 2;
+    if (cancelled && !isSwipe) return;
+    touchStart.current = null;
+    if (isSwipe) changeMonth(dx < 0 ? 1 : -1);
   };
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={screen.content}>
-      <View style={s.calendar} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
+      <View
+        style={s.calendar}
+        onTouchStart={onTouchStart}
+        onTouchEnd={(e) => finishSwipe(e, false)}
+        onTouchCancel={(e) => finishSwipe(e, true)}
+      >
         <View style={s.monthRow}>
           <PressableScale hitSlop={12} accessibilityLabel="เดือนก่อนหน้า" onPress={() => changeMonth(-1)}>
             <View style={{ transform: [{ rotate: "180deg" }] }}>
