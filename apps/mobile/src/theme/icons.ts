@@ -10,6 +10,7 @@ export {
   CircleAlert,
   Clock,
   Dna,
+  Ellipsis,
   Fence,
   Gauge,
   Heart,

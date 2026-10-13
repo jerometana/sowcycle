@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { haptic } from "../lib/haptics";
 import { color, Text } from "../theme";
-import { Check, ChevronDown, ChevronRight, ListFilter, Plus, Search, User } from "../theme/icons";
+import { Check, ChevronDown, ChevronRight, Ellipsis, ListFilter, Plus, Search } from "../theme/icons";
 import { AccountDrawer } from "./AccountDrawer";
 import { Drawer } from "./Drawer";
 import { PressableScale } from "./motion";
@@ -42,7 +42,7 @@ export function HeaderActions(props: {
       {props.account && (
         <>
           <PressableScale hitSlop={8} accessibilityLabel="บัญชี" onPress={press(() => setAccountOpen(true))} style={s.button}>
-            <User size={20} color={color.gray600} />
+            <Ellipsis size={20} color={color.gray600} />
           </PressableScale>
           <AccountDrawer open={accountOpen} onClose={() => setAccountOpen(false)} />
         </>
