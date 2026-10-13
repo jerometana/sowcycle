@@ -9,8 +9,8 @@ import { Drawer } from "./Drawer";
 import { PressableScale } from "./motion";
 import { Button, EmptyText, SearchBar } from "./ui";
 
-// The header's right side: optional search and filter buttons, then the account button.
-export function HeaderActions(props: { onSearch?: () => void; onFilter?: () => void; filterActive?: boolean }) {
+// The header's right side: optional search and filter buttons, then the account button on หน้าหลัก.
+export function HeaderActions(props: { onSearch?: () => void; onFilter?: () => void; filterActive?: boolean; account?: boolean }) {
   const [accountOpen, setAccountOpen] = useState(false);
   const press = (action: () => void) => () => {
     haptic.tap();
@@ -34,10 +34,14 @@ export function HeaderActions(props: { onSearch?: () => void; onFilter?: () => v
           <ListFilter size={20} color={props.filterActive ? color.primary : color.gray600} />
         </PressableScale>
       )}
-      <PressableScale hitSlop={8} accessibilityLabel="บัญชี" onPress={press(() => setAccountOpen(true))} style={s.button}>
-        <User size={20} color={color.gray600} />
-      </PressableScale>
-      <AccountDrawer open={accountOpen} onClose={() => setAccountOpen(false)} />
+      {props.account && (
+        <>
+          <PressableScale hitSlop={8} accessibilityLabel="บัญชี" onPress={press(() => setAccountOpen(true))} style={s.button}>
+            <User size={20} color={color.gray600} />
+          </PressableScale>
+          <AccountDrawer open={accountOpen} onClose={() => setAccountOpen(false)} />
+        </>
+      )}
     </View>
   );
 }

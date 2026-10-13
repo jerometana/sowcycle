@@ -42,10 +42,12 @@ export default function TabsLayout() {
         headerShadowVisible: false,
         headerTitleAlign: "left",
         headerTitleStyle: { fontFamily: fonts["700"], fontSize: 26, color: color.foreground },
-        headerRight: () => <HeaderActions />,
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "หน้าหลัก", tabBarIcon: tabIcon(House) }} />
+      <Tabs.Screen
+        name="index"
+        options={{ title: "หน้าหลัก", tabBarIcon: tabIcon(House), headerRight: () => <HeaderActions account /> }}
+      />
       <Tabs.Screen name="sows" options={{ title: "แม่พันธุ์", tabBarIcon: tabIcon(PiggyBank) }} />
       <Tabs.Screen name="medicines" options={{ title: "ยาและวัคซีน", tabBarLabel: "ยา", tabBarIcon: tabIcon(Syringe) }} />
       <Tabs.Screen name="litters" options={{ title: "ครอกลูกหมู", tabBarLabel: "ครอก", tabBarIcon: tabIcon(Fence) }} />
