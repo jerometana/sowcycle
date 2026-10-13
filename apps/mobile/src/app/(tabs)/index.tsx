@@ -10,6 +10,7 @@ import { useSowCards } from "../../db/sowCards";
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Calendar, CircleAlert, Heart } from "../../theme/icons";
+import { FadeIn } from "../../components/motion";
 
 type LitterStat = {
   birth_date: string | null;
@@ -92,30 +93,34 @@ export default function Home() {
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={screen.content}>
-      <Stat
-        title="แม่พันธุ์ตั้งครรภ์"
-        value={pregnant.length}
-        unit="ตัว"
-        tint={color.primary}
-        wash="#fce7f3"
-        trend={monthlyTotals(breedDates.map((b) => ({ date: b.breed_date, amount: 1 })))}
-        onPress={() => router.push("/sows")}
-      />
-      <Stat
-        title="ลูกสุกรขุน"
-        value={fatteningPiglets}
-        unit="ตัว"
-        tint={color.blue}
-        wash="#dbeafe"
-        trend={monthlyTotals(
-          litters.map((l) => ({
-            date: l.birth_date,
-            amount: (l.piglets_male_born_alive ?? 0) + (l.piglets_female_born_alive ?? 0),
-          }))
-        )}
-        onPress={() => router.push("/litters")}
-      />
-      <View style={{ flexDirection: "row", gap: 12 }}>
+      <FadeIn index={0}>
+        <Stat
+          title="แม่พันธุ์ตั้งครรภ์"
+          value={pregnant.length}
+          unit="ตัว"
+          tint={color.primary}
+          wash="#fce7f3"
+          trend={monthlyTotals(breedDates.map((b) => ({ date: b.breed_date, amount: 1 })))}
+          onPress={() => router.push("/sows")}
+        />
+      </FadeIn>
+      <FadeIn index={1}>
+        <Stat
+          title="ลูกสุกรขุน"
+          value={fatteningPiglets}
+          unit="ตัว"
+          tint={color.blue}
+          wash="#dbeafe"
+          trend={monthlyTotals(
+            litters.map((l) => ({
+              date: l.birth_date,
+              amount: (l.piglets_male_born_alive ?? 0) + (l.piglets_female_born_alive ?? 0),
+            }))
+          )}
+          onPress={() => router.push("/litters")}
+        />
+      </FadeIn>
+      <FadeIn index={2} style={{ flexDirection: "row", gap: 12 }}>
         <Stat
           stacked
           title="น้ำหนักขายเฉลี่ย"
@@ -136,32 +141,36 @@ export default function Home() {
           trend={lastSix(litters, "birth_date", "piglets_born_count")}
           onPress={() => router.push("/litters")}
         />
-      </View>
+      </FadeIn>
 
       <SectionTitle>{`แม่พันธุ์ตั้งครรภ์ (${pregnant.length})`}</SectionTitle>
       {pregnant.length === 0 && <EmptyText>ไม่มีแม่พันธุ์ตั้งครรภ์</EmptyText>}
-      {pregnant.map((sow) => (
-        <SowCard key={sow.id} sow={sow} />
+      {pregnant.map((sow, i) => (
+        <FadeIn key={sow.id} index={i + 3}>
+          <SowCard sow={sow} />
+        </FadeIn>
       ))}
 
       <SectionTitle>ครบกำหนดใน 7 วัน</SectionTitle>
       {soon.length === 0 && <EmptyText>ไม่มีรายการใน 7 วันข้างหน้า</EmptyText>}
-      {soon.map((e) => (
-        <Card key={`${e.kind}:${e.sourceId}`} onPress={() => router.push({ pathname: "/sows/[id]", params: { id: e.sowId } })}>
-          <InfoRow
-            icon={e.kind === "farrowDue" ? Heart : e.kind === "saleable" ? Calendar : CircleAlert}
-            tint={e.kind === "farrowDue" ? color.primary : color.amber}
-            label={
-              e.kind === "farrowDue"
-                ? `กำหนดคลอด · ${e.sowName}`
-                : e.kind === "saleable"
-                  ? `กำหนดขาย · ครอกของ ${e.sowName}`
-                  : `กลับสัดครั้งที่ ${e.kind === "check21" ? 1 : 2} · ${e.sowName}`
-            }
-          >
-            {thaiDateLong(e.date)}
-          </InfoRow>
-        </Card>
+      {soon.map((e, i) => (
+        <FadeIn key={`${e.kind}:${e.sourceId}`} index={i}>
+          <Card onPress={() => router.push({ pathname: "/sows/[id]", params: { id: e.sowId } })}>
+            <InfoRow
+              icon={e.kind === "farrowDue" ? Heart : e.kind === "saleable" ? Calendar : CircleAlert}
+              tint={e.kind === "farrowDue" ? color.primary : color.amber}
+              label={
+                e.kind === "farrowDue"
+                  ? `กำหนดคลอด · ${e.sowName}`
+                  : e.kind === "saleable"
+                    ? `กำหนดขาย · ครอกของ ${e.sowName}`
+                    : `กลับสัดครั้งที่ ${e.kind === "check21" ? 1 : 2} · ${e.sowName}`
+              }
+            >
+              {thaiDateLong(e.date)}
+            </InfoRow>
+          </Card>
+        </FadeIn>
       ))}
     </ScrollView>
   );

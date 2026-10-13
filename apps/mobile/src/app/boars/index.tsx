@@ -3,6 +3,7 @@ import { useQuery } from "@powersync/react-native";
 import { router, Stack } from "expo-router";
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "../../theme";
+import { FadeIn, PressableScale } from "../../components/motion";
 
 type BoarRow = { id: string; breed: string; description: string | null; breedings: number };
 
@@ -35,17 +36,19 @@ export default function Boars() {
         data={data}
         keyExtractor={(b) => b.id}
         ListEmptyComponent={<Text style={s.empty}>ยังไม่มีพ่อพันธุ์ กด + เพื่อเพิ่ม</Text>}
-        renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}
-            onPress={() => router.push({ pathname: "/boars/[id]", params: { id: item.id } })}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={s.name}>{item.breed}</Text>
-              {!!item.description && <Text style={s.detail}>{item.description}</Text>}
-            </View>
-            <Text style={s.count}>{item.breedings > 0 ? `ใช้ผสม ${item.breedings} ครั้ง` : "ยังไม่เคยใช้"}</Text>
-          </Pressable>
+        renderItem={({ item, index }) => (
+          <FadeIn index={index}>
+            <PressableScale
+              style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}
+              onPress={() => router.push({ pathname: "/boars/[id]", params: { id: item.id } })}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={s.name}>{item.breed}</Text>
+                {!!item.description && <Text style={s.detail}>{item.description}</Text>}
+              </View>
+              <Text style={s.count}>{item.breedings > 0 ? `ใช้ผสม ${item.breedings} ครั้ง` : "ยังไม่เคยใช้"}</Text>
+            </PressableScale>
+          </FadeIn>
         )}
       />
     </>

@@ -3,12 +3,13 @@ import { farrowFormSchema } from "@sowcycle/core";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { DateField } from "../../../components/DateField";
 import { NumberField, SubmitButton } from "../../../components/Form";
 import { recordFarrow, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { Text } from "../../../theme";
+import { PressableScale } from "../../../components/motion";
 
 export default function FarrowSheet() {
   const { breedingId } = useLocalSearchParams<{ id: string; breedingId: string }>();
@@ -62,9 +63,9 @@ export default function FarrowSheet() {
       keyboardShouldPersistTaps="handled"
     >
       <DateField label={aborted ? "วันที่แท้ง" : "วันที่คลอด"} value={farrowDate} onChange={setFarrowDate} />
-      <Pressable onPress={() => setAborted(!aborted)} style={[s.toggle, aborted && s.toggleOn]}>
+      <PressableScale onPress={() => setAborted(!aborted)} style={[s.toggle, aborted && s.toggleOn]}>
         <Text style={[s.toggleText, aborted && { color: "#dc2626" }]}>{aborted ? "✓ แท้ง" : "แท้ง"}</Text>
-      </Pressable>
+      </PressableScale>
       {!aborted && (
         <>
           <NumberField label="ลูกตัวผู้ (มีชีวิต)" value={male} onChange={setMale} />

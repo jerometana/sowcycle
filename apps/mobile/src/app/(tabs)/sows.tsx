@@ -5,6 +5,7 @@ import { SowCard } from "../../components/SowCard";
 import { EmptyText, SearchBar, screen } from "../../components/ui";
 import { useSowCards } from "../../db/sowCards";
 import { Text } from "../../theme";
+import { FadeIn } from "../../components/motion";
 
 export default function SowList() {
   const status = useStatus();
@@ -33,7 +34,11 @@ export default function SowList() {
       ListEmptyComponent={
         <EmptyText>{isLoading || !status.hasSynced ? "กำลังโหลด…" : query ? "ไม่พบแม่พันธุ์" : "ยังไม่มีแม่พันธุ์"}</EmptyText>
       }
-      renderItem={({ item }) => <SowCard sow={item} />}
+      renderItem={({ item, index }) => (
+        <FadeIn index={index}>
+          <SowCard sow={item} />
+        </FadeIn>
+      )}
     />
   );
 }

@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Animated, Pressable, StyleSheet, useAnimatedValue, View } from "react-native";
 import { Text } from "../theme";
+import { motion, useReducedMotion } from "./motion";
 
 export type ChartPoint = { key: string; label: string; value: number };
 
@@ -43,7 +44,7 @@ export function ColumnChart(props: { title: string; unit: string; points: ChartP
         <View style={s.plot}>
           <View style={[s.grid, { top: 0 }]} />
           <View style={[s.grid, { bottom: 0 }]} />
-          {props.points.map((p) => {
+          {props.points.map((p, i) => {
             const height = Math.max(2, (p.value / top) * PLOT_HEIGHT);
             const isSelected = selected === p.key;
             return (
@@ -54,7 +55,7 @@ export function ColumnChart(props: { title: string; unit: string; points: ChartP
                 hitSlop={8}
               >
                 {labelled.has(p.key) && <Text style={[s.value, isSelected && s.valueSelected]}>{format(p.value)}</Text>}
-                <View style={[s.column, { height, opacity: selected && !isSelected ? 0.45 : 1 }]} />
+                <Column height={height} index={i} dimmed={!!selected && !isSelected} />
               </Pressable>
             );
           })}
@@ -68,6 +69,35 @@ export function ColumnChart(props: { title: string; unit: string; points: ChartP
         ))}
       </View>
     </View>
+  );
+}
+
+function Column(props: { height: number; index: number; dimmed: boolean }) {
+  const reduced = useReducedMotion();
+  const grow = useAnimatedValue(0);
+  const opacity = useAnimatedValue(1);
+
+  useEffect(() => {
+    Animated.timing(grow, {
+      toValue: 1,
+      duration: motion.duration * 2,
+      delay: props.index * motion.stagger,
+      easing: motion.easing,
+      useNativeDriver: true,
+    }).start();
+  }, [grow, props.index]);
+
+  useEffect(() => {
+    Animated.timing(opacity, { toValue: props.dimmed ? 0.45 : 1, duration: 150, useNativeDriver: true }).start();
+  }, [opacity, props.dimmed]);
+
+  return (
+    <Animated.View
+      style={[
+        s.column,
+        { height: props.height, opacity, transformOrigin: "bottom", transform: [{ scaleY: reduced ? 1 : grow }] },
+      ]}
+    />
   );
 }
 

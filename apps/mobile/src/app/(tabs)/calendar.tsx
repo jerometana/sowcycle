@@ -12,11 +12,12 @@ import {
 } from "date-fns";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { Card, CardHeader, EmptyText, InfoRow, screen } from "../../components/ui";
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Calendar as CalendarIcon, ChevronRight, Heart, PiggyBank } from "../../theme/icons";
+import { FadeIn, PressableScale } from "../../components/motion";
 
 const LIME = "#84cc16";
 const WEEKDAYS = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
@@ -81,13 +82,15 @@ export default function CalendarScreen() {
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={screen.content}>
       <View style={s.calendar}>
         <View style={s.monthRow}>
-          <Pressable hitSlop={12} onPress={() => setMonth(addMonths(month, -1))} style={{ transform: [{ rotate: "180deg" }] }}>
-            <ChevronRight size={20} color={color.mutedForeground} />
-          </Pressable>
+          <PressableScale hitSlop={12} onPress={() => setMonth(addMonths(month, -1))}>
+            <View style={{ transform: [{ rotate: "180deg" }] }}>
+              <ChevronRight size={20} color={color.mutedForeground} />
+            </View>
+          </PressableScale>
           <Text style={s.monthTitle}>{month.toLocaleDateString("th-TH", { month: "long", year: "numeric" })}</Text>
-          <Pressable hitSlop={12} onPress={() => setMonth(addMonths(month, 1))}>
+          <PressableScale hitSlop={12} onPress={() => setMonth(addMonths(month, 1))}>
             <ChevronRight size={20} color={color.mutedForeground} />
-          </Pressable>
+          </PressableScale>
         </View>
         <View style={s.week}>
           {WEEKDAYS.map((w) => (
@@ -100,13 +103,13 @@ export default function CalendarScreen() {
             const isSelected = isSameDay(d, selected);
             const inMonth = isSameMonth(d, month);
             return (
-              <Pressable key={d.toISOString()} style={s.cell} onPress={() => setSelected(d)}>
+              <PressableScale key={d.toISOString()} style={s.cell} onPress={() => setSelected(d)}>
                 <View style={[s.dayDot, isSelected ? s.selected : marked && { backgroundColor: marked.backgroundColor, opacity: marked.opacity }]}>
                   <Text style={[s.dayText, !inMonth && { color: "#d4d4d4" }, (marked || isSelected) && { color: color.primaryForeground }]}>
                     {d.getDate()}
                   </Text>
                 </View>
-              </Pressable>
+              </PressableScale>
             );
           })}
         </View>
@@ -115,30 +118,32 @@ export default function CalendarScreen() {
       <Text style={s.selectedTitle}>{thaiDateLong(selected, true)}</Text>
       {selectedEvents.length === 0 && <EmptyText>ไม่มีรายการในวันนี้</EmptyText>}
       {selectedEvents.map((e, i) => (
-        <Card key={i} onPress={() => router.push({ pathname: "/sows/[id]", params: { id: e.sowId } })}>
-          <CardHeader
-            title={e.kind === "farrow" ? `${e.done ? "คลอดแล้ว" : "กำหนดคลอด"} แม่${e.sowName}` : `${e.done ? "ขายแล้ว" : "กำหนดขาย"} ลูกขุนแม่${e.sowName}`}
-            tone={e.kind === "farrow" ? "primary" : "default"}
-          />
-          {e.kind === "sale" && <InfoRow icon={PiggyBank} label="จำนวน">{`${e.count} ตัว`}</InfoRow>}
-          <InfoRow
-            icon={e.kind === "farrow" ? Heart : CalendarIcon}
-            tint={e.kind === "farrow" ? color.primary : color.mutedForeground}
-            label={e.kind === "farrow" ? (e.done ? "คลอดเมื่อ" : "กำหนดคลอด") : e.done ? "ขายแล้วเมื่อ" : "กำหนดขาย"}
-          >
-            <Text style={s.value}>
-              {thaiDateLong(e.date)}
-              {!e.done && (
-                <Text style={s.days}>
-                  {(() => {
-                    const n = differenceInCalendarDays(e.date, today);
-                    return n >= 0 ? `  อีก ${n} วัน` : `  เลยมา ${-n} วัน`;
-                  })()}
-                </Text>
-              )}
-            </Text>
-          </InfoRow>
-        </Card>
+        <FadeIn key={`${selected.toISOString()}:${i}`} index={i}>
+          <Card onPress={() => router.push({ pathname: "/sows/[id]", params: { id: e.sowId } })}>
+            <CardHeader
+              title={e.kind === "farrow" ? `${e.done ? "คลอดแล้ว" : "กำหนดคลอด"} แม่${e.sowName}` : `${e.done ? "ขายแล้ว" : "กำหนดขาย"} ลูกขุนแม่${e.sowName}`}
+              tone={e.kind === "farrow" ? "primary" : "default"}
+            />
+            {e.kind === "sale" && <InfoRow icon={PiggyBank} label="จำนวน">{`${e.count} ตัว`}</InfoRow>}
+            <InfoRow
+              icon={e.kind === "farrow" ? Heart : CalendarIcon}
+              tint={e.kind === "farrow" ? color.primary : color.mutedForeground}
+              label={e.kind === "farrow" ? (e.done ? "คลอดเมื่อ" : "กำหนดคลอด") : e.done ? "ขายแล้วเมื่อ" : "กำหนดขาย"}
+            >
+              <Text style={s.value}>
+                {thaiDateLong(e.date)}
+                {!e.done && (
+                  <Text style={s.days}>
+                    {(() => {
+                      const n = differenceInCalendarDays(e.date, today);
+                      return n >= 0 ? `  อีก ${n} วัน` : `  เลยมา ${-n} วัน`;
+                    })()}
+                  </Text>
+                )}
+              </Text>
+            </InfoRow>
+          </Card>
+        </FadeIn>
       ))}
     </ScrollView>
   );
