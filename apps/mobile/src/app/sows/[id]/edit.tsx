@@ -1,10 +1,9 @@
 import { useQuery } from "@powersync/react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { ScrollView, StyleSheet, Switch, View } from "react-native";
 import { OptionalDateField } from "../../../components/DateField";
-import { useConfirm } from "../../../components/Drawer";
-import { NumberField, SubmitButton } from "../../../components/Form";
+import { DeleteButton, NumberField, SubmitButton } from "../../../components/Form";
 import { createSow, deleteSow, saveErrorMessage, updateSow, type SowInput } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { haptic } from "../../../lib/haptics";
@@ -49,7 +48,6 @@ function SowForm({ id, isNew, sow }: { id: string; isNew: boolean; sow: SowDetai
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [confirmDrawer, confirm] = useConfirm();
   const history = sow
     ? [
         sow.breedings && `ประวัติผสม ${sow.breedings} ครั้ง`,
@@ -58,26 +56,18 @@ function SowForm({ id, isNew, sow }: { id: string; isNew: boolean; sow: SowDetai
       ].filter(Boolean)
     : [];
 
-  const remove = () =>
-    confirm({
-      title: "ลบแม่พันธุ์",
-      message: history.length
-        ? `ลบ ${sow?.name} พร้อม${history.join(" ")} ลบแล้วกู้คืนไม่ได้`
-        : `ต้องการลบ ${sow?.name} หรือไม่`,
-      confirmLabel: "ลบแม่พันธุ์",
-      onConfirm: async () => {
-        setBusy(true);
-        try {
-          await deleteSow(id);
-          haptic.success();
-          router.dismissTo("/sows");
-        } catch (e) {
-          haptic.error();
-          setError(saveErrorMessage(e));
-          setBusy(false);
-        }
-      },
-    });
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await deleteSow(id);
+      haptic.success();
+      router.dismissTo("/sows");
+    } catch (e) {
+      haptic.error();
+      setError(saveErrorMessage(e));
+      setBusy(false);
+    }
+  };
 
   const save = async () => {
     const breastsCount = breasts === "" ? null : Number(breasts);
@@ -124,16 +114,16 @@ function SowForm({ id, isNew, sow }: { id: string; isNew: boolean; sow: SowDetai
       </View>
       {error && <Text style={s.error}>{error}</Text>}
       <SubmitButton title={isNew ? "เพิ่มแม่พันธุ์" : "บันทึก"} online={online} busy={busy} onPress={save} />
-      {!isNew && (
-        <Pressable
-          onPress={remove}
-          disabled={!online || busy}
-          style={({ pressed }) => [s.delete, !online && { opacity: 0.4 }, pressed && { opacity: 0.6 }]}
-        >
-          <Text style={s.deleteText}>ลบแม่พันธุ์</Text>
-        </Pressable>
+      {!isNew && sow && (
+        <DeleteButton
+          label="ลบแม่พันธุ์"
+          title="ลบแม่พันธุ์"
+          message={history.length ? `ลบ ${sow.name} พร้อม${history.join(" ")}` : `ต้องการลบ ${sow.name} หรือไม่`}
+          online={online}
+          busy={busy}
+          onConfirm={remove}
+        />
       )}
-      {confirmDrawer}
     </ScrollView>
   );
 }
@@ -145,6 +135,4 @@ const s = StyleSheet.create({
   switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8 },
   switchLabel: { fontSize: 16 },
   error: { color: "#dc2626", textAlign: "center", marginTop: 8 },
-  delete: { alignItems: "center", paddingVertical: 14, marginTop: 8 },
-  deleteText: { color: "#dc2626", fontSize: 16, fontWeight: "600" },
 });

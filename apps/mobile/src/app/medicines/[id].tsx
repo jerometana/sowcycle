@@ -1,9 +1,8 @@
 import { useQuery } from "@powersync/react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
-import { useConfirm } from "../../components/Drawer";
-import { NumberField, SubmitButton } from "../../components/Form";
+import { ScrollView, StyleSheet } from "react-native";
+import { DeleteButton, NumberField, SubmitButton } from "../../components/Form";
 import { createMedicine, deleteMedicine, saveErrorMessage, updateMedicine } from "../../db/mutations";
 import { useOnline } from "../../db/useOnline";
 import { Text, TextInput } from "../../theme";
@@ -57,11 +56,6 @@ function MedicineForm({ id, isNew, medicine }: { id: string; isNew: boolean; med
     run(() => (isNew ? createMedicine(input) : updateMedicine(id, input)), !isNew);
   };
 
-  const [confirmDrawer, confirm] = useConfirm();
-  const confirmDelete = () =>
-    confirm({ title: "ลบยา", message: `ต้องการลบ ${medicine?.title} หรือไม่`, confirmLabel: "ลบยา", onConfirm: () => run(() => deleteMedicine(id)) });
-
-  const inUse = (medicine?.uses ?? 0) > 0;
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
@@ -74,18 +68,16 @@ function MedicineForm({ id, isNew, medicine }: { id: string; isNew: boolean; med
       {error && <Text style={s.error}>{error}</Text>}
       <SubmitButton title={isNew ? "เพิ่มยา" : "บันทึก"} online={online} busy={busy} onPress={save} />
       {!isNew && medicine && (
-        <>
-          <Pressable
-            onPress={confirmDelete}
-            disabled={inUse || !online || busy}
-            style={({ pressed }) => [s.delete, (inUse || !online) && { opacity: 0.4 }, pressed && { opacity: 0.6 }]}
-          >
-            <Text style={s.deleteText}>ลบยา</Text>
-          </Pressable>
-          {inUse && <Text style={s.hint}>ลบไม่ได้ เพราะมีประวัติการรักษาที่ใช้ยานี้ {medicine.uses} ครั้ง</Text>}
-        </>
+        <DeleteButton
+          label="ลบยา"
+          title="ลบยา"
+          message={`ต้องการลบ ${medicine.title} หรือไม่`}
+          online={online}
+          busy={busy}
+          blockedReason={medicine.uses > 0 ? `ลบไม่ได้ เพราะมีประวัติการรักษาที่ใช้ยานี้ ${medicine.uses} ครั้ง` : undefined}
+          onConfirm={() => run(() => deleteMedicine(id))}
+        />
       )}
-      {confirmDrawer}
     </ScrollView>
   );
 }
@@ -96,7 +88,4 @@ const s = StyleSheet.create({
   input: { backgroundColor: "#f5f5f4", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
   multiline: { minHeight: 88, textAlignVertical: "top" },
   error: { color: "#dc2626", textAlign: "center", marginTop: 8 },
-  delete: { alignItems: "center", paddingVertical: 14, marginTop: 8 },
-  deleteText: { color: "#dc2626", fontSize: 16, fontWeight: "600" },
-  hint: { textAlign: "center", color: "#737373" },
 });

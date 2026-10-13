@@ -2,10 +2,9 @@ import { useQuery } from "@powersync/react-native";
 import { saleableDate } from "@sowcycle/core";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { DateField, OptionalDateField } from "../../../components/DateField";
-import { useConfirm } from "../../../components/Drawer";
-import { NumberField, SubmitButton } from "../../../components/Form";
+import { DeleteButton, NumberField, SubmitButton } from "../../../components/Form";
 import { deleteLitter, saveErrorMessage, updateLitter } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { thaiDate } from "../../../lib/date";
@@ -46,25 +45,18 @@ function EditLitterForm({ id, litter }: { id: string; litter: LitterDetail }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [confirmDrawer, confirm] = useConfirm();
-  const remove = () =>
-    confirm({
-      title: "ลบข้อมูลครอก",
-      message: "ลบครอกนี้หรือไม่ ลบแล้วกู้คืนไม่ได้",
-      confirmLabel: "ลบครอก",
-      onConfirm: async () => {
-        setBusy(true);
-        try {
-          await deleteLitter(id);
-          haptic.success();
-          router.dismiss(2);
-        } catch (e) {
-          haptic.error();
-          setError(saveErrorMessage(e));
-          setBusy(false);
-        }
-      },
-    });
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await deleteLitter(id);
+      haptic.success();
+      router.dismiss(2);
+    } catch (e) {
+      haptic.error();
+      setError(saveErrorMessage(e));
+      setBusy(false);
+    }
+  };
 
   const save = async () => {
     const maleCount = count(male);
@@ -102,14 +94,7 @@ function EditLitterForm({ id, litter }: { id: string; litter: LitterDetail }) {
 
       {error && <Text style={s.error}>{error}</Text>}
       <SubmitButton title="บันทึก" online={online} busy={busy} onPress={save} />
-      <Pressable
-        onPress={remove}
-        disabled={!online || busy}
-        style={({ pressed }) => [s.delete, !online && { opacity: 0.4 }, pressed && { opacity: 0.6 }]}
-      >
-        <Text style={s.deleteText}>ลบครอก</Text>
-      </Pressable>
-      {confirmDrawer}
+      <DeleteButton label="ลบครอก" title="ลบข้อมูลครอก" message="ลบครอกนี้หรือไม่" online={online} busy={busy} onConfirm={remove} />
     </ScrollView>
   );
 }
@@ -119,6 +104,4 @@ const s = StyleSheet.create({
   section: { fontSize: 18, fontWeight: "600", marginTop: 16 },
   hint: { color: color.mutedForeground },
   error: { color: "#dc2626", textAlign: "center", marginTop: 8 },
-  delete: { alignItems: "center", paddingVertical: 14, marginTop: 8 },
-  deleteText: { color: "#dc2626", fontSize: 16, fontWeight: "600" },
 });
