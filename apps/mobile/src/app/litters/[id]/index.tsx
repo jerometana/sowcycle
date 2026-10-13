@@ -4,17 +4,17 @@ import { differenceInCalendarDays } from "date-fns";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { DateField } from "../../components/DateField";
-import { Drawer } from "../../components/Drawer";
-import { NumberField, SubmitButton } from "../../components/Form";
-import { Button, InfoRow } from "../../components/ui";
-import { recordSale, saveErrorMessage, startFattening } from "../../db/mutations";
-import { useOnline } from "../../db/useOnline";
-import { thaiDate, thaiDateLong } from "../../lib/date";
-import { haptic } from "../../lib/haptics";
-import { LITTER_STAGE_LABEL } from "../../lib/litterLabels";
-import { color, Text } from "../../theme";
-import { Banknote, Beef, Cake, Check, ChevronRight, Clock, Dna, Gauge, List, PiggyBank, Plus } from "../../theme/icons";
+import { DateField } from "../../../components/DateField";
+import { Drawer } from "../../../components/Drawer";
+import { NumberField, SubmitButton } from "../../../components/Form";
+import { Button, InfoRow } from "../../../components/ui";
+import { recordSale, saveErrorMessage, startFattening } from "../../../db/mutations";
+import { useOnline } from "../../../db/useOnline";
+import { thaiDate, thaiDateLong } from "../../../lib/date";
+import { haptic } from "../../../lib/haptics";
+import { LITTER_STAGE_LABEL } from "../../../lib/litterLabels";
+import { color, Text } from "../../../theme";
+import { Banknote, Beef, Cake, Check, ChevronRight, Clock, Dna, Gauge, List, Pencil, PiggyBank, Plus } from "../../../theme/icons";
 
 type LitterDetail = {
   sow_id: string;
@@ -116,7 +116,14 @@ export default function LitterSheet() {
           <Text style={s.limeText}>บันทึกวันขาย</Text>
         </Pressable>
       )}
-      {!online && stage !== "sold" && <Text style={s.hint}>ต้องมีสัญญาณเพื่อบันทึก</Text>}
+      <Button
+        title="แก้ไขข้อมูล"
+        icon={Pencil}
+        variant="secondary"
+        disabled={!online}
+        onPress={() => router.push({ pathname: "/litters/[id]/edit", params: { id } })}
+      />
+      {!online && <Text style={s.hint}>ต้องมีสัญญาณเพื่อบันทึก</Text>}
 
       <Drawer open={action !== null} onClose={() => setAction(null)} title={action === "sale" ? "บันทึกวันขาย" : "เพิ่มวันเริ่มขุน"}>
         {action && <ActionForm id={id} action={action} onDone={() => setAction(null)} />}

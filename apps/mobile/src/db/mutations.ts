@@ -72,6 +72,34 @@ export const startFattening = (litterId: string, fatteningAt: Date) =>
       .eq("id", Number(litterId))
   );
 
+export type LitterInput = {
+  birthDate: Date;
+  male: number;
+  female: number;
+  fatteningAt: Date | null;
+  soldAt: Date | null;
+  avgWeight: number | null;
+};
+
+// Mirrors the web's litter edit: the total follows the two counts, and the sale due date follows fattening.
+export const updateLitter = (litterId: string, input: LitterInput) =>
+  runWrite(
+    supabase
+      .from("litters")
+      .update({
+        birth_date: input.birthDate.toISOString(),
+        piglets_male_born_alive: input.male,
+        piglets_female_born_alive: input.female,
+        piglets_born_count: input.male + input.female,
+        fattening_at: input.fatteningAt?.toISOString() ?? null,
+        saleable_at: input.fatteningAt ? saleableDate(input.fatteningAt).toISOString() : null,
+        sold_at: input.soldAt?.toISOString() ?? null,
+        avg_weight: input.avgWeight,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", Number(litterId))
+  );
+
 export const recordSale = (litterId: string, soldAt: Date, avgWeight: number | null) =>
   runWrite(
     supabase

@@ -120,7 +120,7 @@ export default function SowDetail() {
   ];
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={screen.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={[screen.content, { paddingTop: 0 }]}>
       <Stack.Screen
         options={{
           title: "",

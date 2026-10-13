@@ -82,8 +82,12 @@ export default function RootLayout() {
             options={drawer("พ่อพันธุ์")}
           />
           <Stack.Screen
-            name="litters/[id]"
+            name="litters/[id]/index"
             options={drawer("ครอก")}
+          />
+          <Stack.Screen
+            name="litters/[id]/edit"
+            options={drawer("แก้ไขข้อมูลครอก")}
           />
           <Stack.Screen name="sows/[id]/index" options={{ title: "" }} />
           <Stack.Screen
