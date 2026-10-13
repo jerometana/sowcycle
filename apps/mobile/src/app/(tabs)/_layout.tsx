@@ -50,7 +50,7 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: color.background },
         headerShadowVisible: false,
         headerTitleAlign: "left",
-        headerTitleStyle: { fontFamily: fonts["600"], fontSize: 18, color: color.foreground },
+        headerTitleStyle: { fontFamily: fonts["700"], fontSize: 26, color: color.foreground },
         headerRight: AccountButton,
       }}
     >
