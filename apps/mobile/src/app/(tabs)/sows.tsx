@@ -31,6 +31,7 @@ export default function SowList() {
       groups: [
         {
           key: "status",
+          label: "สถานะ",
           options: (Object.keys(SOW_FILTERS) as SowFilter[]).map((key) => ({ key, label: SOW_FILTERS[key].label })),
           value: filter,
           defaultValue: "active",

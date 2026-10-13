@@ -3,6 +3,7 @@ export {
   Cake,
   Calendar,
   Check,
+  ChevronDown,
   ChevronRight,
   CircleAlert,
   Dna,

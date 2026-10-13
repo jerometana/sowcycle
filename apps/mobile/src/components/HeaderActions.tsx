@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { haptic } from "../lib/haptics";
 import { color, Text } from "../theme";
-import { Check, ChevronRight, ListFilter, Search, User } from "../theme/icons";
+import { Check, ChevronDown, ChevronRight, ListFilter, Search, User } from "../theme/icons";
 import { AccountDrawer } from "./AccountDrawer";
 import { Drawer } from "./Drawer";
 import { PressableScale } from "./motion";
@@ -128,38 +128,78 @@ function SearchDrawer(props: SearchConfig & { open: boolean; onClose: () => void
   );
 }
 
-// One group closes on pick; with several groups the drawer stays open until เสร็จ.
+const DROPDOWN_HEIGHT = 48;
+const ROW_GAP = 12;
+
+// One row per filter: label left, dropdown right. Options float over the drawer, which keeps a fixed height.
+// The option list lives at body level, not inside its row: iOS only delivers touches inside a parent's bounds.
 function FilterDrawer(props: FilterConfig & { open: boolean; onClose: () => void }) {
-  const single = props.groups.length === 1;
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const openIndex = props.groups.findIndex((g) => g.key === expanded);
+  const openGroup = props.groups[openIndex];
+  const close = () => {
+    setExpanded(null);
+    props.onClose();
+  };
+
   return (
-    <Drawer open={props.open} onClose={props.onClose} title={props.title}>
-      <ScrollView style={[s.list, { flexShrink: 1 }]} bounces={false}>
-        {props.groups.map((group) => (
-          <View key={group.key}>
-            {!!group.label && <Text style={s.groupLabel}>{group.label}</Text>}
-            {group.options.map((option) => {
-              const selected = option.key === group.value;
-              return (
-                <Pressable
-                  key={option.key}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  onPress={() => {
-                    haptic.select();
-                    group.onChange(option.key);
-                    if (single) props.onClose();
-                  }}
-                  style={({ pressed }) => [s.row, pressed && s.rowPressed]}
-                >
-                  <Text style={[s.rowTitle, { flex: 1 }, selected && { color: color.primary }]}>{option.label}</Text>
-                  {selected && <Check size={20} color={color.primary} />}
-                </Pressable>
-              );
-            })}
+    <Drawer open={props.open} onClose={close} title={props.title} heightRatio={0.5}>
+      <View style={s.filterBody}>
+        {expanded && <Pressable style={[StyleSheet.absoluteFill, { zIndex: 5 }]} onPress={() => setExpanded(null)} accessibilityLabel="ปิดตัวเลือก" />}
+        {props.groups.map((g) => {
+          const isOpen = g.key === expanded;
+          const active = g.value !== g.defaultValue;
+          const current = g.options.find((o) => o.key === g.value)?.label ?? "";
+          return (
+            <View key={g.key} style={s.filterRow}>
+              <Text style={s.dropdownLabel}>{g.label ?? props.title}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: isOpen }}
+                accessibilityLabel={`${g.label ?? props.title}: ${current}`}
+                onPress={() => {
+                  haptic.select();
+                  setExpanded(isOpen ? null : g.key);
+                }}
+                style={[s.dropdown, isOpen && s.dropdownOpen, active && s.dropdownActive]}
+              >
+                <Text style={[s.dropdownValue, active && { color: color.primary }]} numberOfLines={1}>
+                  {current}
+                </Text>
+                <ChevronDown size={18} color={color.mutedForeground} style={isOpen && { transform: [{ rotate: "180deg" }] }} />
+              </Pressable>
+            </View>
+          );
+        })}
+        {openGroup && (
+          <View style={[s.menu, { top: openIndex * (DROPDOWN_HEIGHT + ROW_GAP) + DROPDOWN_HEIGHT + 8 }]}>
+            <ScrollView style={s.menuScroll} bounces={false}>
+              {openGroup.options.map((option) => {
+                const selected = option.key === openGroup.value;
+                return (
+                  <Pressable
+                    key={option.key}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    onPress={() => {
+                      haptic.select();
+                      openGroup.onChange(option.key);
+                      setExpanded(null);
+                    }}
+                    style={({ pressed }) => [s.menuRow, pressed && s.rowPressed]}
+                  >
+                    <Text style={[s.menuText, selected && { color: color.primary, fontWeight: "600" }]}>{option.label}</Text>
+                    {selected && <Check size={18} color={color.primary} />}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
-        ))}
-      </ScrollView>
-      {!single && <Button title="เสร็จ" onPress={props.onClose} />}
+        )}
+        <View style={{ marginTop: "auto" }}>
+          <Button title="เสร็จ" onPress={close} />
+        </View>
+      </View>
     </Drawer>
   );
 }
@@ -181,5 +221,49 @@ const s = StyleSheet.create({
   rowPressed: { backgroundColor: color.muted },
   rowTitle: { fontSize: 16, fontWeight: "600" },
   rowSubtitle: { fontSize: 14, color: color.mutedForeground },
-  groupLabel: { fontSize: 14, color: color.mutedForeground, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  filterRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  dropdownLabel: { flex: 1, fontSize: 16, fontWeight: "500" },
+  dropdown: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    width: "55%",
+    height: DROPDOWN_HEIGHT,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.card,
+  },
+  dropdownOpen: { borderColor: color.foreground },
+  dropdownActive: { borderColor: color.primary, backgroundColor: "#fdf2f8" },
+  dropdownValue: { flexShrink: 1, fontSize: 16, fontWeight: "500" },
+  filterBody: { flex: 1, gap: ROW_GAP },
+  menu: {
+    position: "absolute",
+    right: 0,
+    zIndex: 10,
+    width: "55%",
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.border,
+    backgroundColor: color.card,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  menuScroll: { maxHeight: 260, borderRadius: 14 },
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: color.border,
+  },
+  menuText: { fontSize: 16 },
 });

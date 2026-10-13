@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Animated,
   Easing,
@@ -17,6 +17,7 @@ import { Button } from "./ui";
 import { haptic } from "../lib/haptics";
 
 const DISMISS_DISTANCE = 80;
+const OPEN_MS = 300;
 const CLOSE_MS = 220;
 
 // Matches the web's vaul drawer: slides up from the bottom, drag the handle or title down to close.
@@ -50,7 +51,7 @@ export function Drawer(props: {
     if (props.open) {
       drag.setValue(0);
       if (reduced) offset.setValue(0);
-      else Animated.spring(offset, { toValue: 0, useNativeDriver: true, speed: 16, bounciness: 2 }).start();
+      else Animated.timing(offset, { toValue: 0, duration: OPEN_MS, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       return;
     }
     if (reduced) offset.setValue(height);
@@ -74,8 +75,12 @@ export function Drawer(props: {
     },
   };
 
-  const translateY = Animated.add(offset, drag);
-  const backdrop = offset.interpolate({ inputRange: [0, height], outputRange: [0.4, 0], extrapolate: "clamp" });
+  // Built once per sheet so a re-render mid-animation (e.g. picking a filter) keeps the same native nodes.
+  const translateY = useMemo(() => Animated.add(offset, drag), [offset, drag]);
+  const backdrop = useMemo(
+    () => offset.interpolate({ inputRange: [0, height], outputRange: [0.4, 0], extrapolate: "clamp" }),
+    [offset, height]
+  );
 
   return (
     <Modal visible={mounted} transparent animationType="none" onRequestClose={props.onClose} statusBarTranslucent>
