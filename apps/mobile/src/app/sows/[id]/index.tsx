@@ -105,7 +105,7 @@ export default function SowDetail() {
     ...(filter !== "breedings" ? treatments.map((t) => ({ kind: "treatment" as const, date: t.used_at, t })) : []),
   ].sort((a, b) => b.date.localeCompare(a.date));
 
-  // The ways to add to this sow's history, shared by the header's add drawer and the history tab.
+  // The ways to add to this sow's history, offered by the header's add drawer.
   const addActions = [
     openPregnancy
       ? {
@@ -131,9 +131,9 @@ export default function SowDetail() {
                 haptic.tap();
                 setAddOpen(true);
               }}
-              style={[s.roundButton, { backgroundColor: color.primary }]}
+              style={s.headerIcon}
             >
-              <Plus size={22} color={color.primaryForeground} />
+              <Plus size={24} color={color.primary} />
             </PressableScale>
           ),
         }}
@@ -239,12 +239,7 @@ export default function SowDetail() {
               </Pressable>
             ))}
           </View>
-          <View style={{ gap: 8 }}>
-            {addActions.map((a) => (
-              <Button key={a.title} title={a.title} icon={a.icon} variant={a.primary ? "primary" : "surface"} disabled={!online} onPress={a.go} />
-            ))}
-            {!online && <Text style={s.offline}>ออฟไลน์ ดูข้อมูลได้ แต่ต้องมีสัญญาณเพื่อบันทึก</Text>}
-          </View>
+          {!online && <Text style={s.offline}>ออฟไลน์ ดูข้อมูลได้ แต่ต้องมีสัญญาณเพื่อบันทึก</Text>}
           {history.length === 0 && <EmptyText>ยังไม่มีประวัติ</EmptyText>}
           {history.map((h) =>
             h.kind === "breeding" ? <BreedingCard key={`b${h.b.id}`} breeding={h.b} number={h.n} /> : <TreatmentCard key={`t${h.t.id}`} treatment={h.t} />
@@ -369,6 +364,8 @@ function TreatmentCard({ treatment: t }: { treatment: TreatmentRow }) {
 }
 
 const s = StyleSheet.create({
+  // iOS draws the glass circle around header items itself, like the back button; only the icon is ours.
+  headerIcon: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   roundButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center" },
   nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   name: { flex: 1, fontSize: 26, fontWeight: "700", color: color.foreground },
