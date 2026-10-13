@@ -49,7 +49,7 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontFamily: fonts["400"], fontSize: 12 },
         headerStyle: { backgroundColor: color.background },
         headerShadowVisible: false,
-        headerTitleAlign: "center",
+        headerTitleAlign: "left",
         headerTitleStyle: { fontFamily: fonts["600"], fontSize: 18, color: color.foreground },
         headerRight: AccountButton,
       }}
