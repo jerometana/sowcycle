@@ -100,6 +100,8 @@ export const updateLitter = (litterId: string, input: LitterInput) =>
       .eq("id", Number(litterId))
   );
 
+export const deleteLitter = (litterId: string) => runWrite(supabase.from("litters").delete().eq("id", Number(litterId)));
+
 export const recordSale = (litterId: string, soldAt: Date, avgWeight: number | null) =>
   runWrite(
     supabase
