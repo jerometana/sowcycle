@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { haptic } from "../lib/haptics";
 import { color, Text } from "../theme";
-import { Check, ChevronDown, ChevronRight, Plus, Search, User } from "../theme/icons";
+import { Check, ChevronDown, ChevronRight, ListFilter, Plus, Search, User } from "../theme/icons";
 import { AccountDrawer } from "./AccountDrawer";
 import { Drawer } from "./Drawer";
 import { PressableScale } from "./motion";
@@ -93,12 +93,14 @@ export function useHeaderTools(tools: { search: SearchConfig; filters?: FilterGr
 const DROPDOWN_HEIGHT = 48;
 const ROW_GAP = 12;
 
-// Filters sit one per row above the results; an open dropdown floats its options over them.
+// A filter button beside the search field shows or hides the filter rows; an open dropdown floats its options over the results.
 // The options live at body level, not inside their row, because iOS only delivers touches inside a parent's bounds.
 function SearchDrawer(props: { open: boolean; onClose: () => void; search: SearchConfig; filters: FilterGroup[] }) {
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   const pending = useRef<(() => void) | null>(null);
+  const filterActive = props.filters.some((g) => g.value !== g.defaultValue);
   const openIndex = props.filters.findIndex((g) => g.key === expanded);
   const openGroup = props.filters[openIndex];
   const q = query.trim().toLowerCase();
@@ -111,6 +113,7 @@ function SearchDrawer(props: { open: boolean; onClose: () => void; search: Searc
       open={props.open}
       onClose={() => {
         setExpanded(null);
+        setShowFilters(false);
         props.onClose();
       }}
       onClosed={() => {
@@ -121,10 +124,28 @@ function SearchDrawer(props: { open: boolean; onClose: () => void; search: Searc
       title="ค้นหา"
       heightRatio={0.85}
     >
-      <SearchBar value={query} onChange={setQuery} placeholder={props.search.placeholder} />
+      <View style={s.searchRow}>
+        <View style={{ flex: 1 }}>
+          <SearchBar value={query} onChange={setQuery} placeholder={props.search.placeholder} />
+        </View>
+        {props.filters.length > 0 && (
+          <PressableScale
+            accessibilityLabel="ตัวกรอง"
+            accessibilityState={{ expanded: showFilters, selected: filterActive }}
+            onPress={() => {
+              haptic.tap();
+              setExpanded(null);
+              setShowFilters(!showFilters);
+            }}
+            style={[s.filterButton, filterActive && s.filterButtonActive, showFilters && s.filterButtonOpen]}
+          >
+            <ListFilter size={20} color={filterActive ? color.primary : color.gray600} />
+          </PressableScale>
+        )}
+      </View>
       <View style={s.body}>
         {expanded && <Pressable style={[StyleSheet.absoluteFill, { zIndex: 5 }]} onPress={() => setExpanded(null)} accessibilityLabel="ปิดตัวเลือก" />}
-        {props.filters.map((g) => {
+        {showFilters && props.filters.map((g) => {
           const isOpen = g.key === expanded;
           const active = g.value !== g.defaultValue;
           const current = g.options.find((o) => o.key === g.value)?.label ?? "";
@@ -204,6 +225,19 @@ const s = StyleSheet.create({
   button: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center" },
   buttonActive: { backgroundColor: "#fce7f3" },
   buttonPrimary: { backgroundColor: color.primary },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterButtonActive: { borderColor: color.primary, backgroundColor: "#fdf2f8" },
+  filterButtonOpen: { borderColor: color.foreground },
   body: { flex: 1, gap: ROW_GAP },
   filterRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   filterLabel: { flex: 1, fontSize: 16, fontWeight: "500" },

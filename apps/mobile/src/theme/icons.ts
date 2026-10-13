@@ -10,6 +10,7 @@ export {
   Fence,
   Heart,
   House,
+  ListFilter,
   Milk,
   Pencil,
   PiggyBank,
