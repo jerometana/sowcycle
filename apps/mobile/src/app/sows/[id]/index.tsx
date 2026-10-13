@@ -89,7 +89,7 @@ type HistoryFilter = "all" | "breedings" | "treatments";
 export default function SowDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const online = useOnline();
-  const [tab, setTab] = useState<Tab>("stats");
+  const [tab, setTab] = useState<Tab>("history");
   const [filter, setFilter] = useState<HistoryFilter>("all");
   const { data: sows } = useQuery<SowRow>("select name, breasts_count, birth_date, add_date from sows where id = ?", [id]);
   const { data: breedings } = useQuery<BreedingRow>(BREEDINGS, [id]);
@@ -188,8 +188,8 @@ export default function SowDetail() {
         value={tab}
         onChange={setTab}
         options={[
-          { value: "stats", label: "สถิติ" },
           { value: "history", label: "ประวัติ" },
+          { value: "stats", label: "สถิติ" },
         ]}
       />
 
