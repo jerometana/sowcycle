@@ -30,24 +30,24 @@ type CalendarEvent = { kind: CycleEventKind; sowId: string; sowName: string; dat
 
 const KINDS: Record<
   CycleEventKind,
-  { dot: string; icon: LucideIcon; title: (e: CalendarEvent) => string; label: (done: boolean) => string }
+  { tint: string; icon: LucideIcon; title: (e: CalendarEvent) => string; label: (done: boolean) => string }
 > = {
-  check21: { dot: color.amber, icon: CircleAlert, title: (e) => `กลับสัดครั้งที่ 1 แม่${e.sowName}`, label: () => "วันเช็คกลับสัด" },
-  check42: { dot: color.amber, icon: CircleAlert, title: (e) => `กลับสัดครั้งที่ 2 แม่${e.sowName}`, label: () => "วันเช็คกลับสัด" },
+  check21: { tint: color.amber, icon: CircleAlert, title: (e) => `กลับสัดครั้งที่ 1 แม่${e.sowName}`, label: () => "วันเช็คกลับสัด" },
+  check42: { tint: color.amber, icon: CircleAlert, title: (e) => `กลับสัดครั้งที่ 2 แม่${e.sowName}`, label: () => "วันเช็คกลับสัด" },
   farrowDue: {
-    dot: color.primary,
+    tint: color.primary,
     icon: Heart,
     title: (e) => `${e.done ? "คลอดแล้ว" : "กำหนดคลอด"} แม่${e.sowName}`,
     label: (done) => (done ? "คลอดเมื่อ" : "กำหนดคลอด"),
   },
   saleable: {
-    dot: "#84cc16",
+    tint: "#84cc16",
     icon: CalendarIcon,
     title: (e) => `${e.done ? "ขายแล้ว" : "กำหนดขาย"} ลูกขุนแม่${e.sowName}`,
     label: (done) => (done ? "ขายแล้วเมื่อ" : "กำหนดขาย"),
   },
 };
-const DOT_ORDER: CycleEventKind[] = ["farrowDue", "saleable", "check21", "check42"];
+const KIND_ORDER: CycleEventKind[] = ["farrowDue", "saleable", "check21", "check42"];
 
 type LitterRow = EventLitter & { piglets_born_count: number | null };
 const LITTERS = `
@@ -155,7 +155,9 @@ export default function CalendarScreen() {
         <View style={s.grid}>
           {days.map((d) => {
             const onDay = eventsByDay.get(dayKey(d)) ?? [];
-            const kinds = DOT_ORDER.filter((k) => onDay.some((e) => e.kind === k));
+            const kinds = KIND_ORDER.filter((k) => onDay.some((e) => e.kind === k));
+            const overdue = (k: CycleEventKind) => onDay.filter((e) => e.kind === k).every((e) => !e.done && e.date < today);
+            const ringColor = (k: CycleEventKind) => KINDS[k].tint + (overdue(k) ? "66" : "");
             const isSelected = isSameDay(d, selected);
             const isToday = isSameDay(d, today);
             const inMonth = isSameMonth(d, month);
@@ -168,7 +170,14 @@ export default function CalendarScreen() {
                 accessibilityState={{ selected: isSelected }}
                 accessibilityLabel={`${thaiDateLong(d)}${isToday ? " วันนี้" : ""}${onDay.length ? ` ${onDay.length} รายการ` : ""}`}
               >
-                <View style={[s.day, isToday && s.today, isSelected && s.selected]}>
+                <View
+                  style={[
+                    s.day,
+                    isToday && s.today,
+                    isSelected && s.selected,
+                    kinds.length > 0 && { borderColor: ringColor(kinds[0]) },
+                  ]}
+                >
                   <Text
                     style={[
                       s.dayText,
@@ -181,10 +190,9 @@ export default function CalendarScreen() {
                   </Text>
                 </View>
                 <View style={s.dots}>
-                  {kinds.map((k) => {
-                    const overdue = onDay.filter((e) => e.kind === k).every((e) => !e.done && e.date < today);
-                    return <View key={k} style={[s.dot, { backgroundColor: KINDS[k].dot, opacity: overdue ? 0.4 : 1 }]} />;
-                  })}
+                  {kinds.slice(1).map((k) => (
+                    <View key={k} style={[s.dot, { backgroundColor: ringColor(k) }]} />
+                  ))}
                 </View>
               </PressableScale>
             );
@@ -201,7 +209,7 @@ export default function CalendarScreen() {
             <Card onPress={() => router.push({ pathname: "/sows/[id]", params: { id: e.sowId } })}>
               <CardHeader title={kind.title(e)} tone={e.kind === "farrowDue" ? "primary" : "default"} />
               {e.count !== undefined && <InfoRow icon={PiggyBank} label="จำนวน">{`${e.count} ตัว`}</InfoRow>}
-              <InfoRow icon={kind.icon} tint={e.done ? color.mutedForeground : kind.dot} label={kind.label(e.done)}>
+              <InfoRow icon={kind.icon} tint={e.done ? color.mutedForeground : kind.tint} label={kind.label(e.done)}>
                 <Text style={s.value}>
                   {thaiDateLong(e.date)}
                   {!e.done && (
@@ -233,12 +241,12 @@ const s = StyleSheet.create({
   weekday: { flex: 1, textAlign: "center", color: color.mutedForeground, fontSize: 13 },
   grid: { flexDirection: "row", flexWrap: "wrap", marginTop: 4 },
   cell: { width: `${100 / 7}%`, alignItems: "center", paddingTop: 4, paddingBottom: 2 },
-  day: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "transparent" },
-  today: { borderColor: color.primary },
-  selected: { backgroundColor: "#a3a3a3", borderColor: "#a3a3a3" },
+  day: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", borderWidth: 2.5, borderColor: "transparent" },
+  today: { backgroundColor: "#fce7f3" },
+  selected: { backgroundColor: "#a3a3a3" },
   dayText: { fontSize: 15, color: color.foreground },
-  dots: { flexDirection: "row", gap: 3, height: 6, marginTop: 3 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  dots: { flexDirection: "row", gap: 3, height: 5, marginTop: 2 },
+  dot: { width: 5, height: 5, borderRadius: 2.5 },
   selectedTitle: { fontSize: 20, fontWeight: "600", marginTop: 8 },
   value: { fontSize: 16, fontWeight: "600", color: color.gray900 },
   days: { fontSize: 14, fontWeight: "500", color: color.mutedForeground },
