@@ -28,10 +28,15 @@ export default function SowList() {
   const tools = useHeaderTools({
     filter: {
       title: "กรองแม่พันธุ์",
-      options: (Object.keys(SOW_FILTERS) as SowFilter[]).map((key) => ({ key, label: SOW_FILTERS[key].label })),
-      value: filter,
-      defaultValue: "active",
-      onChange: setFilter,
+      groups: [
+        {
+          key: "status",
+          options: (Object.keys(SOW_FILTERS) as SowFilter[]).map((key) => ({ key, label: SOW_FILTERS[key].label })),
+          value: filter,
+          defaultValue: "active",
+          onChange: (key) => setFilter(key as SowFilter),
+        },
+      ],
     },
     search: {
       placeholder: "ค้นหาด้วยชื่อแม่พันธุ์",

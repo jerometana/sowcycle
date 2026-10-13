@@ -23,11 +23,15 @@ type LitterRow = {
   fattening_at: string | null;
   saleable_at: string | null;
   sold_at: string | null;
+  breed: string | null;
 };
 
+const ALL_BREEDS = "all";
+
 const LITTERS = `
-  select l.*, s.name as sow_name
+  select l.*, s.name as sow_name, bo.breed as breed
   from litters l join sows s on s.id = l.sow_id
+  left join boars bo on bo.id = l.boar_id
   order by l.birth_date desc`;
 
 // Mirrors the web's กรองลูกหมู stages; ยังไม่ขาย keeps the old default of hiding sold litters.
@@ -43,14 +47,32 @@ type LitterFilter = keyof typeof LITTER_FILTERS;
 export default function Litters() {
   const [filter, setFilter] = useState<LitterFilter>("unsold");
   const { data } = useQuery<LitterRow>(LITTERS);
-  const litters = data.filter((l) => LITTER_FILTERS[filter].test(litterStage(l)));
+  const [breed, setBreed] = useState(ALL_BREEDS);
+  const breeds = [...new Set(data.map((l) => l.breed).filter((b): b is string => !!b))].sort((a, b) => a.localeCompare(b, "th"));
+  const litters = data.filter(
+    (l) => LITTER_FILTERS[filter].test(litterStage(l)) && (breed === ALL_BREEDS || l.breed === breed)
+  );
   const tools = useHeaderTools({
     filter: {
       title: "กรองครอก",
-      options: (Object.keys(LITTER_FILTERS) as LitterFilter[]).map((key) => ({ key, label: LITTER_FILTERS[key].label })),
-      value: filter,
-      defaultValue: "unsold",
-      onChange: setFilter,
+      groups: [
+        {
+          key: "stage",
+          label: "สถานะ",
+          options: (Object.keys(LITTER_FILTERS) as LitterFilter[]).map((key) => ({ key, label: LITTER_FILTERS[key].label })),
+          value: filter,
+          defaultValue: "unsold",
+          onChange: (key) => setFilter(key as LitterFilter),
+        },
+        {
+          key: "breed",
+          label: "สายพันธุ์พ่อพันธุ์",
+          options: [{ key: ALL_BREEDS, label: "ทุกสายพันธุ์" }, ...breeds.map((b) => ({ key: b, label: b }))],
+          value: breed,
+          defaultValue: ALL_BREEDS,
+          onChange: setBreed,
+        },
+      ],
     },
     search: {
       placeholder: "ค้นหาด้วยชื่อแม่พันธุ์",

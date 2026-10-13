@@ -7,7 +7,7 @@ import { Check, ChevronRight, ListFilter, Search, User } from "../theme/icons";
 import { AccountDrawer } from "./AccountDrawer";
 import { Drawer } from "./Drawer";
 import { PressableScale } from "./motion";
-import { EmptyText, SearchBar } from "./ui";
+import { Button, EmptyText, SearchBar } from "./ui";
 
 // The header's right side: optional search and filter buttons, then the account button.
 export function HeaderActions(props: { onSearch?: () => void; onFilter?: () => void; filterActive?: boolean }) {
@@ -44,22 +44,24 @@ export function HeaderActions(props: { onSearch?: () => void; onFilter?: () => v
 
 export type SearchItem = { key: string; title: string; subtitle?: string; onPress: () => void };
 type SearchConfig = { placeholder: string; items: SearchItem[]; emptyText: string };
-type FilterConfig<K extends string> = {
-  title: string;
-  options: { key: K; label: string }[];
-  value: K;
-  defaultValue: K;
-  onChange: (key: K) => void;
+export type FilterGroup = {
+  key: string;
+  label?: string;
+  options: { key: string; label: string }[];
+  value: string;
+  defaultValue: string;
+  onChange: (key: string) => void;
 };
+type FilterConfig = { title: string; groups: FilterGroup[] };
 
 // Puts search and filter buttons in the screen's header, each opening its own drawer.
 // Returns the drawers for the screen to render.
-export function useHeaderTools<K extends string>(tools: { search?: SearchConfig; filter?: FilterConfig<K> }) {
+export function useHeaderTools(tools: { search?: SearchConfig; filter?: FilterConfig }) {
   const navigation = useNavigation();
   const [openDrawer, setOpenDrawer] = useState<"search" | "filter" | null>(null);
   const hasSearch = !!tools.search;
   const hasFilter = !!tools.filter;
-  const filterActive = !!tools.filter && tools.filter.value !== tools.filter.defaultValue;
+  const filterActive = !!tools.filter?.groups.some((group) => group.value !== group.defaultValue);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -126,30 +128,38 @@ function SearchDrawer(props: SearchConfig & { open: boolean; onClose: () => void
   );
 }
 
-function FilterDrawer<K extends string>(props: FilterConfig<K> & { open: boolean; onClose: () => void }) {
+// One group closes on pick; with several groups the drawer stays open until เสร็จ.
+function FilterDrawer(props: FilterConfig & { open: boolean; onClose: () => void }) {
+  const single = props.groups.length === 1;
   return (
     <Drawer open={props.open} onClose={props.onClose} title={props.title}>
-      <View style={s.list}>
-        {props.options.map((option) => {
-          const selected = option.key === props.value;
-          return (
-            <Pressable
-              key={option.key}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              onPress={() => {
-                haptic.select();
-                props.onChange(option.key);
-                props.onClose();
-              }}
-              style={({ pressed }) => [s.row, pressed && s.rowPressed]}
-            >
-              <Text style={[s.rowTitle, { flex: 1 }, selected && { color: color.primary }]}>{option.label}</Text>
-              {selected && <Check size={20} color={color.primary} />}
-            </Pressable>
-          );
-        })}
-      </View>
+      <ScrollView style={[s.list, { flexShrink: 1 }]} bounces={false}>
+        {props.groups.map((group) => (
+          <View key={group.key}>
+            {!!group.label && <Text style={s.groupLabel}>{group.label}</Text>}
+            {group.options.map((option) => {
+              const selected = option.key === group.value;
+              return (
+                <Pressable
+                  key={option.key}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  onPress={() => {
+                    haptic.select();
+                    group.onChange(option.key);
+                    if (single) props.onClose();
+                  }}
+                  style={({ pressed }) => [s.row, pressed && s.rowPressed]}
+                >
+                  <Text style={[s.rowTitle, { flex: 1 }, selected && { color: color.primary }]}>{option.label}</Text>
+                  {selected && <Check size={20} color={color.primary} />}
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </ScrollView>
+      {!single && <Button title="เสร็จ" onPress={props.onClose} />}
     </Drawer>
   );
 }
@@ -171,4 +181,5 @@ const s = StyleSheet.create({
   rowPressed: { backgroundColor: color.muted },
   rowTitle: { fontSize: 16, fontWeight: "600" },
   rowSubtitle: { fontSize: 14, color: color.mutedForeground },
+  groupLabel: { fontSize: 14, color: color.mutedForeground, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
 });

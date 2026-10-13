@@ -86,7 +86,8 @@ export function Drawer(props: {
         <Animated.View
           style={[
             s.sheet,
-            props.heightRatio ? { height: height * props.heightRatio, maxHeight: "100%" } : null,
+            { maxHeight: "100%" },
+            props.heightRatio ? { height: height * props.heightRatio } : null,
             { paddingBottom: insets.bottom + 16, transform: [{ translateY }] },
           ]}
           accessibilityViewIsModal
