@@ -9,8 +9,7 @@ import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Cake, Calendar, Check, PiggyBank, Plus } from "../../theme/icons";
 import { FadeIn } from "../../components/motion";
-import { useHeaderTools } from "../../components/HeaderActions";
-import { LITTER_STAGE_LABEL } from "../../lib/litterLabels";
+import { matchesQuery, useHeaderTools } from "../../components/HeaderActions";
 
 type LitterRow = {
   id: string;
@@ -51,10 +50,7 @@ export default function Litters() {
   const breeds = [...new Set(data.map((l) => l.breed).filter((b): b is string => !!b))].sort((a, b) => a.localeCompare(b, "th"));
   // A breed whose last litter was deleted falls back to all, rather than leaving an empty list behind a blank filter.
   const breed = breeds.includes(chosenBreed) ? chosenBreed : ALL_BREEDS;
-  const litters = data.filter(
-    (l) => LITTER_FILTERS[filter].test(litterStage(l)) && (breed === ALL_BREEDS || l.breed === breed)
-  );
-  const tools = useHeaderTools({
+  const { query, searchBar, drawers } = useHeaderTools({
     filters: [
       {
         key: "stage",
@@ -73,21 +69,18 @@ export default function Litters() {
         onChange: setBreed,
       },
     ],
-    search: {
-      placeholder: "ค้นหาด้วยชื่อแม่พันธุ์",
-      emptyText: "ไม่พบครอก",
-      items: litters.map((l) => ({
-        key: l.id,
-        title: `ลูกขุนแม่${l.sow_name}`,
-        subtitle: [LITTER_STAGE_LABEL[litterStage(l)].text, l.birth_date && `คลอด ${thaiDateLong(l.birth_date)}`].filter(Boolean).join(" · "),
-        onPress: () => router.push({ pathname: "/litters/[id]", params: { id: l.id } }),
-      })),
-    },
+    search: { placeholder: "ค้นหาด้วยชื่อแม่พันธุ์" },
   });
+  const litters = data.filter(
+    (l) =>
+      LITTER_FILTERS[filter].test(litterStage(l)) &&
+      (breed === ALL_BREEDS || l.breed === breed) &&
+      matchesQuery(query, l.sow_name, l.breed)
+  );
 
   return (
     <>
-      {tools}
+      {drawers}
       <FlatList
       contentInsetAdjustmentBehavior="automatic"
       style={screen.root}
@@ -95,7 +88,8 @@ export default function Litters() {
       data={litters}
       keyExtractor={(l) => l.id}
       keyboardShouldPersistTaps="handled"
-      ListEmptyComponent={<EmptyText>{data.length ? "ไม่มีครอกตามตัวกรองนี้" : "ไม่มีครอก"}</EmptyText>}
+      ListHeaderComponent={searchBar}
+      ListEmptyComponent={<EmptyText>{query ? "ไม่พบครอก" : data.length ? "ไม่มีครอกตามตัวกรองนี้" : "ไม่มีครอก"}</EmptyText>}
       renderItem={({ item, index }) => (
         <FadeIn index={index}>
           <LitterCard litter={item} />

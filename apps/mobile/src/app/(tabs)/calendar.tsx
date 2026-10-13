@@ -19,12 +19,11 @@ import { ScrollView, StyleSheet, View, type GestureResponderEvent } from "react-
 import { FadeIn, PressableScale } from "../../components/motion";
 import { Card, CardHeader, EmptyText, InfoRow, screen } from "../../components/ui";
 import { EVENT_BREEDINGS, toEventBreeding } from "../../db/cycleEvents";
-import { thaiDateLong } from "../../lib/date";
+import { thaiDateLong, THAI_WEEKDAYS } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Calendar as CalendarIcon, ChevronRight, CircleAlert, Heart, PiggyBank } from "../../theme/icons";
 import { haptic } from "../../lib/haptics";
 
-const WEEKDAYS = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
 const SWIPE_DISTANCE = 50;
 
 type CalendarEvent = { kind: CycleEventKind; sowId: string; sowName: string; date: Date; done: boolean; count?: number };
@@ -163,7 +162,7 @@ export default function CalendarScreen() {
           </PressableScale>
         </View>
         <View style={s.week}>
-          {WEEKDAYS.map((w) => (
+          {THAI_WEEKDAYS.map((w) => (
             <Text key={w} style={s.weekday}>{w}</Text>
           ))}
         </View>
