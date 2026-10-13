@@ -10,7 +10,7 @@ import { useConfirm } from "../../../components/Drawer";
 import { Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../../components/ui";
 import { deleteTreatment, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
-import { thaiDateLong, thaiMonthYear } from "../../../lib/date";
+import { thaiDate, thaiDateLong, thaiMonthYear } from "../../../lib/date";
 import { color, Text } from "../../../theme";
 import {
   Activity,
@@ -167,8 +167,14 @@ export default function SowDetail() {
             )}
           </InfoRow>
           <InfoRow icon={Milk} label="จำนวนเต้านม">{sow.breasts_count ? `${sow.breasts_count} เต้า` : "-"}</InfoRow>
-          <InfoRow icon={Cake} label="วันเกิด">{sow.birth_date ? thaiDateLong(sow.birth_date, true) : "-"}</InfoRow>
-          <InfoRow icon={House} label="รับเข้าเมื่อ">{sow.add_date ? thaiDateLong(sow.add_date, true) : "-"}</InfoRow>
+          <View style={s.pairRow}>
+            <View style={{ flex: 1 }}>
+              <InfoRow icon={Cake} label="วันเกิด">{sow.birth_date ? thaiDate(sow.birth_date, true) : "-"}</InfoRow>
+            </View>
+            <View style={{ flex: 1 }}>
+              <InfoRow icon={House} label="รับเข้าเมื่อ">{sow.add_date ? thaiDate(sow.add_date, true) : "-"}</InfoRow>
+            </View>
+          </View>
           {breed && (
             <Pressable onPress={() => router.push("/boars")} style={s.breedBox}>
               <View style={s.whiteSquare}>
@@ -340,6 +346,7 @@ const s = StyleSheet.create({
   // iOS draws the glass circle around header items itself, like the back button; only the icon is ours.
   headerIcon: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   roundButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center" },
+  pairRow: { flexDirection: "row", gap: 12 },
   nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   name: { flex: 1, fontSize: 26, fontWeight: "700", color: color.foreground },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
