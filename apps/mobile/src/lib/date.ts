@@ -15,3 +15,8 @@ export const thaiDateLong = (date: Date | string, withYear = false) =>
     month: "long",
     year: withYear ? "numeric" : undefined,
   });
+
+export const THAI_WEEKDAYS = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+
+// "อ. 13 ตุลาคม". Built by hand because Android's Thai locale spells out the weekday even when asked for the short form.
+export const thaiWeekdayDate = (date: Date) => `${THAI_WEEKDAYS[date.getDay()]} ${thaiDateLong(date)}`;

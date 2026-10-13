@@ -5,7 +5,7 @@ import { EmptyText, screen } from "../../components/ui";
 import { useSowCards } from "../../db/sowCards";
 import { Text } from "../../theme";
 import { FadeIn } from "../../components/motion";
-import { useHeaderTools } from "../../components/HeaderActions";
+import { matchesQuery, useHeaderTools } from "../../components/HeaderActions";
 import { router } from "expo-router";
 import { useState } from "react";
 import type { SowCardData } from "../../db/sowCards";
@@ -24,8 +24,7 @@ export default function SowList() {
   const status = useStatus();
   const { sows, isLoading } = useSowCards();
   const [filter, setFilter] = useState<SowFilter>("active");
-  const shown = sows.filter(SOW_FILTERS[filter].test);
-  const tools = useHeaderTools({
+  const { query, searchBar, drawers } = useHeaderTools({
     add: { label: "เพิ่มแม่พันธุ์", onPress: () => router.push({ pathname: "/sows/[id]/edit", params: { id: "new" } }) },
     filters: [
       {
@@ -37,21 +36,13 @@ export default function SowList() {
         onChange: (key) => setFilter(key as SowFilter),
       },
     ],
-    search: {
-      placeholder: "ค้นหาด้วยชื่อแม่พันธุ์",
-      emptyText: "ไม่พบแม่พันธุ์",
-      items: shown.map((sow) => ({
-        key: sow.id,
-        title: sow.name,
-        subtitle: sow.breed ?? undefined,
-        onPress: () => router.push({ pathname: "/sows/[id]", params: { id: sow.id } }),
-      })),
-    },
+    search: { placeholder: "ค้นหาด้วยชื่อแม่พันธุ์หรือสายพันธุ์" },
   });
+  const shown = sows.filter(SOW_FILTERS[filter].test).filter((sow) => matchesQuery(query, sow.name, sow.breed));
 
   return (
     <View style={{ flex: 1 }}>
-      {tools}
+      {drawers}
       <FlatList
       contentInsetAdjustmentBehavior="automatic"
       style={screen.root}
@@ -60,14 +51,17 @@ export default function SowList() {
       keyExtractor={(sow) => sow.id}
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
-        !status.connected ? (
-          <Text style={{ backgroundColor: "#fef3c7", color: "#92400e", padding: 12, borderRadius: 12, textAlign: "center" }}>
-            ออฟไลน์ ข้อมูลจะซิงก์เมื่อมีสัญญาณ
-          </Text>
-        ) : null
+        <View style={{ gap: 12 }}>
+          {searchBar}
+          {!status.connected && (
+            <Text style={{ backgroundColor: "#fef3c7", color: "#92400e", padding: 12, borderRadius: 12, textAlign: "center" }}>
+              ออฟไลน์ ข้อมูลจะซิงก์เมื่อมีสัญญาณ
+            </Text>
+          )}
+        </View>
       }
       ListEmptyComponent={
-        <EmptyText>{isLoading || !status.hasSynced ? "กำลังโหลด…" : sows.length ? "ไม่มีแม่พันธุ์ตามตัวกรองนี้" : "ยังไม่มีแม่พันธุ์"}</EmptyText>
+        <EmptyText>{isLoading || !status.hasSynced ? "กำลังโหลด…" : query ? "ไม่พบแม่พันธุ์" : sows.length ? "ไม่มีแม่พันธุ์ตามตัวกรองนี้" : "ยังไม่มีแม่พันธุ์"}</EmptyText>
       }
       renderItem={({ item, index }) => (
         <FadeIn index={index}>

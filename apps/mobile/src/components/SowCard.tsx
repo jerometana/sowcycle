@@ -7,6 +7,8 @@ import { color, Text } from "../theme";
 import { Check, Heart, PiggyBank, Plus, X } from "../theme/icons";
 import { Button, Card, CardHeader, InfoRow, Pill } from "./ui";
 
+const farrowCountdown = (days: number) => (days < 0 ? `  เลยกำหนด ${-days} วัน` : `  ภายใน ${days} วัน`);
+
 export function SowCard({ sow }: { sow: SowCardData }) {
   const pregnant = sow.pregnancy;
   const open = () => router.push({ pathname: "/sows/[id]", params: { id: sow.id } });
@@ -25,7 +27,7 @@ export function SowCard({ sow }: { sow: SowCardData }) {
             <Text style={s.value}>
               {pregnant ? thaiDateLong(pregnant.expectedFarrow) : sow.lastFarrow ? thaiDateLong(sow.lastFarrow) : "ไม่มีประวัติคลอด"}
               {pregnant && (
-                <Text style={s.soon}>{`  ภายใน ${differenceInCalendarDays(new Date(pregnant.expectedFarrow), new Date())} วัน`}</Text>
+                <Text style={s.soon}>{farrowCountdown(differenceInCalendarDays(new Date(pregnant.expectedFarrow), new Date()))}</Text>
               )}
               {!pregnant && sow.lastFarrow && (
                 <Text style={s.ago}>{`  ${differenceInCalendarDays(new Date(), new Date(sow.lastFarrow))} วันที่แล้ว`}</Text>

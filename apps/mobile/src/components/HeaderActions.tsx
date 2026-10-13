@@ -3,16 +3,18 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { haptic } from "../lib/haptics";
 import { color, Text } from "../theme";
-import { Check, ChevronDown, ChevronRight, Ellipsis, ListFilter, Plus, Search } from "../theme/icons";
+import { Check, ChevronDown, Ellipsis, ListFilter, Plus, Search } from "../theme/icons";
 import { AccountDrawer } from "./AccountDrawer";
 import { Drawer } from "./Drawer";
 import { FadeIn, PressableScale } from "./motion";
-import { EmptyText, SearchBar } from "./ui";
+import { SearchBar } from "./ui";
 
-// The header's right side: the search button, the screen's add button, and the account button on หน้าหลัก.
+// The header's right side: search, filter, the screen's add button, and the account button on หน้าหลัก.
 export function HeaderActions(props: {
   onSearch?: () => void;
   searchActive?: boolean;
+  onFilter?: () => void;
+  filterActive?: boolean;
   add?: { label: string; onPress: () => void };
   account?: boolean;
 }) {
@@ -24,15 +26,30 @@ export function HeaderActions(props: {
   return (
     <View style={s.actions}>
       {props.onSearch && (
-        <PressableScale
-          hitSlop={8}
-          accessibilityLabel="ค้นหาและกรอง"
-          accessibilityState={{ selected: !!props.searchActive }}
-          onPress={press(props.onSearch)}
-          style={[s.button, props.searchActive && s.buttonActive]}
-        >
-          <Search size={20} color={props.searchActive ? color.primary : color.gray600} />
-        </PressableScale>
+        <View style={s.pill}>
+          <PressableScale
+            hitSlop={8}
+            accessibilityLabel="ค้นหา"
+            accessibilityState={{ expanded: !!props.searchActive }}
+            onPress={press(props.onSearch)}
+            style={[s.pillHalf, props.searchActive && s.pillHalfActive]}
+          >
+            <Search size={20} color={props.searchActive ? color.primary : color.gray600} />
+          </PressableScale>
+          {props.onFilter && (
+            <>
+              <PressableScale
+                hitSlop={8}
+                accessibilityLabel="ตัวกรอง"
+                accessibilityState={{ selected: !!props.filterActive }}
+                onPress={press(props.onFilter)}
+                style={[s.pillHalf, props.filterActive && s.pillHalfActive]}
+              >
+                <ListFilter size={20} color={props.filterActive ? color.primary : color.gray600} />
+              </PressableScale>
+            </>
+          )}
+        </View>
       )}
       {props.add && (
         <PressableScale hitSlop={8} accessibilityLabel={props.add.label} onPress={press(props.add.onPress)} style={[s.button, s.buttonPrimary]}>
@@ -51,8 +68,7 @@ export function HeaderActions(props: {
   );
 }
 
-export type SearchItem = { key: string; title: string; subtitle?: string; onPress: () => void };
-type SearchConfig = { placeholder: string; items: SearchItem[]; emptyText: string };
+type SearchConfig = { placeholder: string };
 export type FilterGroup = {
   key: string;
   label: string;
@@ -62,13 +78,21 @@ export type FilterGroup = {
   onChange: (key: string) => void;
 };
 
-// Puts one search button in the screen's header. It opens a drawer that searches and filters together:
-// screens pass items already narrowed by their filters, so results and the list behind always agree.
-// Returns the drawer for the screen to render.
+export const matchesQuery = (query: string, ...texts: (string | null | undefined)[]) => {
+  const q = query.trim().toLowerCase();
+  return !q || texts.some((t) => t?.toLowerCase().includes(q));
+};
+
+// Puts search, filter and add buttons in the screen's header. Search opens a field the screen renders above its
+// list and filters that list in place by `query`; filter opens a drawer of the screen's filter groups.
 export function useHeaderTools(tools: { search: SearchConfig; filters?: FilterGroup[]; add?: { label: string; onPress: () => void } }) {
   const navigation = useNavigation();
-  const [open, setOpen] = useState(false);
-  const filterActive = !!tools.filters?.some((group) => group.value !== group.defaultValue);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filters = tools.filters ?? [];
+  const hasFilters = filters.length > 0;
+  const filterActive = filters.some((group) => group.value !== group.defaultValue);
   const addLabel = tools.add?.label;
   const addPress = useRef(tools.add?.onPress);
   useLayoutEffect(() => {
@@ -79,76 +103,60 @@ export function useHeaderTools(tools: { search: SearchConfig; filters?: FilterGr
     navigation.setOptions({
       headerRight: () => (
         <HeaderActions
-          onSearch={() => setOpen(true)}
-          searchActive={filterActive}
+          onSearch={() => setSearching((open) => !open)}
+          searchActive={searching}
+          onFilter={hasFilters ? () => setFilterOpen(true) : undefined}
+          filterActive={filterActive}
           add={addLabel ? { label: addLabel, onPress: () => addPress.current?.() } : undefined}
         />
       ),
     });
-  }, [navigation, filterActive, addLabel]);
+  }, [navigation, searching, hasFilters, filterActive, addLabel]);
 
-  return <SearchDrawer open={open} onClose={() => setOpen(false)} search={tools.search} filters={tools.filters ?? []} />;
+  const searchBar = searching ? (
+    <FadeIn style={s.searchRow}>
+      <View style={{ flex: 1 }}>
+        <SearchBar value={query} onChange={setQuery} placeholder={tools.search.placeholder} autoFocus />
+      </View>
+      <Pressable
+        hitSlop={8}
+        onPress={() => {
+          haptic.tap();
+          setQuery("");
+          setSearching(false);
+        }}
+      >
+        <Text style={s.cancel}>ยกเลิก</Text>
+      </Pressable>
+    </FadeIn>
+  ) : null;
+
+  const drawers = hasFilters ? <FilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} filters={filters} /> : null;
+
+  return { query: searching ? query : "", searchBar, drawers };
 }
 
 const DROPDOWN_HEIGHT = 48;
 const ROW_GAP = 12;
 
-// A filter button beside the search field shows or hides the filter rows; an open dropdown floats its options over the results.
+// One row per filter group; an open dropdown floats its options over the rows below.
 // The options live at body level, not inside their row, because iOS only delivers touches inside a parent's bounds.
-function SearchDrawer(props: { open: boolean; onClose: () => void; search: SearchConfig; filters: FilterGroup[] }) {
-  const [query, setQuery] = useState("");
+function FilterDrawer(props: { open: boolean; onClose: () => void; filters: FilterGroup[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const pending = useRef<(() => void) | null>(null);
   const filterActive = props.filters.some((g) => g.value !== g.defaultValue);
   const openIndex = props.filters.findIndex((g) => g.key === expanded);
   const openGroup = props.filters[openIndex];
-  const q = query.trim().toLowerCase();
-  const matches = q
-    ? props.search.items.filter((item) => `${item.title} ${item.subtitle ?? ""}`.toLowerCase().includes(q))
-    : props.search.items;
 
   return (
-    <Drawer
-      open={props.open}
-      onClose={props.onClose}
-      onClosed={() => {
-        setExpanded(null);
-        setShowFilters(false);
-        setQuery("");
-        pending.current?.();
-        pending.current = null;
-      }}
-      title="ค้นหา"
-      heightRatio={0.85}
-    >
-      <View style={s.searchRow}>
-        <View style={{ flex: 1 }}>
-          <SearchBar value={query} onChange={setQuery} placeholder={props.search.placeholder} />
-        </View>
-        {props.filters.length > 0 && (
-          <PressableScale
-            accessibilityLabel="ตัวกรอง"
-            accessibilityState={{ expanded: showFilters, selected: filterActive }}
-            onPress={() => {
-              haptic.tap();
-              setExpanded(null);
-              setShowFilters(!showFilters);
-            }}
-            style={[s.filterButton, filterActive && s.filterButtonActive, showFilters && s.filterButtonOpen]}
-          >
-            <ListFilter size={20} color={filterActive ? color.primary : color.gray600} />
-          </PressableScale>
-        )}
-      </View>
+    <Drawer open={props.open} onClose={props.onClose} onClosed={() => setExpanded(null)} title="ตัวกรอง" heightRatio={0.55}>
       <View style={s.body}>
         {expanded && <Pressable style={[StyleSheet.absoluteFill, { zIndex: 5 }]} onPress={() => setExpanded(null)} accessibilityLabel="ปิดตัวเลือก" />}
-        {showFilters && props.filters.map((g, i) => {
+        {props.filters.map((g) => {
           const isOpen = g.key === expanded;
           const active = g.value !== g.defaultValue;
           const current = g.options.find((o) => o.key === g.value)?.label ?? "";
           return (
-            <FadeIn key={g.key} index={i} style={s.filterRow}>
+            <View key={g.key} style={s.filterRow}>
               <Text style={s.filterLabel}>{g.label}</Text>
               <Pressable
                 accessibilityRole="button"
@@ -165,29 +173,22 @@ function SearchDrawer(props: { open: boolean; onClose: () => void; search: Searc
                 </Text>
                 <ChevronDown size={18} color={color.mutedForeground} style={isOpen && { transform: [{ rotate: "180deg" }] }} />
               </Pressable>
-            </FadeIn>
+            </View>
           );
         })}
-        <ScrollView style={s.results} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-          {matches.length === 0 && <EmptyText>{props.search.emptyText}</EmptyText>}
-          {matches.map((item) => (
-            <Pressable
-              key={item.key}
-              onPress={() => {
-                haptic.select();
-                pending.current = item.onPress;
-                props.onClose();
-              }}
-              style={({ pressed }) => [s.row, pressed && s.rowPressed]}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={s.rowTitle}>{item.title}</Text>
-                {!!item.subtitle && <Text style={s.rowSubtitle}>{item.subtitle}</Text>}
-              </View>
-              <ChevronRight size={20} color={color.mutedForeground} />
-            </Pressable>
-          ))}
-        </ScrollView>
+        {filterActive && (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              setExpanded(null);
+              props.filters.forEach((g) => g.onChange(g.defaultValue));
+            }}
+            hitSlop={8}
+            style={s.reset}
+          >
+            <Text style={s.resetText}>ล้างตัวกรอง</Text>
+          </Pressable>
+        )}
         {openGroup && (
           <View style={[s.menu, { top: openIndex * (DROPDOWN_HEIGHT + ROW_GAP) + DROPDOWN_HEIGHT + 8 }]}>
             <ScrollView style={s.menuScroll} bounces={false}>
@@ -221,21 +222,12 @@ function SearchDrawer(props: { open: boolean; onClose: () => void; search: Searc
 const s = StyleSheet.create({
   actions: { flexDirection: "row", alignItems: "center", gap: 8, marginRight: 16 },
   button: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center" },
-  buttonActive: { backgroundColor: "#fce7f3" },
+  pill: { flexDirection: "row", alignItems: "center", height: 40, paddingHorizontal: 4, borderRadius: 20, backgroundColor: "#e5e5e5" },
+  pillHalf: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
+  pillHalfActive: { backgroundColor: "#fce7f3" },
   buttonPrimary: { backgroundColor: color.primary },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  filterButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.card,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  filterButtonActive: { borderColor: color.primary, backgroundColor: "#fdf2f8" },
-  filterButtonOpen: { borderColor: color.foreground },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  cancel: { fontSize: 16, fontWeight: "600", color: color.primary },
   body: { flex: 1, gap: ROW_GAP },
   filterRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   filterLabel: { flex: 1, fontSize: 16, fontWeight: "500" },
@@ -255,19 +247,9 @@ const s = StyleSheet.create({
   dropdownOpen: { borderColor: color.foreground },
   dropdownActive: { borderColor: color.primary, backgroundColor: "#fdf2f8" },
   dropdownValue: { flexShrink: 1, fontSize: 16, fontWeight: "500" },
-  results: { flex: 1, marginHorizontal: -20 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: color.border,
-  },
+  reset: { alignSelf: "flex-start", paddingVertical: 4 },
+  resetText: { fontSize: 16, fontWeight: "600", color: color.primary },
   rowPressed: { backgroundColor: color.muted },
-  rowTitle: { fontSize: 16, fontWeight: "600" },
-  rowSubtitle: { fontSize: 14, color: color.mutedForeground },
   menu: {
     position: "absolute",
     right: 0,

@@ -367,7 +367,7 @@ const s = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: color.primary,
   },
-  addButtonOffline: { backgroundColor: color.muted },
+  addButtonOffline: { backgroundColor: "#e5e5e5" },
   addLabel: { fontSize: 16, fontWeight: "600", color: color.primaryForeground },
   name: { fontSize: 26, fontWeight: "700", color: color.foreground },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
