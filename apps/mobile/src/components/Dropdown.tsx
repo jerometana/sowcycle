@@ -1,47 +1,60 @@
-import { useRef, useState } from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
+import { useState, type ReactNode } from "react";
+import { Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View, type GestureResponderEvent } from "react-native";
 import { haptic } from "../lib/haptics";
 import { color, Text } from "../theme";
 import { Check, ChevronDown } from "../theme/icons";
 
-// A text trigger ("ทั้งหมด ⌄") whose options float in a Modal, so they stay tappable over any scroll view.
-export function Dropdown<K extends string>(props: { value: K; options: { key: K; label: string }[]; onChange: (key: K) => void }) {
-  const trigger = useRef<View>(null);
-  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
-  const current = props.options.find((o) => o.key === props.value)?.label ?? "";
+export type MenuItem = { key: string; label: string; icon?: LucideIcon; selected?: boolean; onPress: () => void };
 
-  const open = () => {
+// A list that floats under its trigger in a Modal, so it stays tappable over scroll views and headers.
+// The chosen item runs after the Modal is gone, because iOS will not present a sheet while it is still on screen.
+export function Menu(props: {
+  items: MenuItem[];
+  align?: "left" | "right";
+  renderTrigger: (open: (e: GestureResponderEvent) => void, isOpen: boolean) => ReactNode;
+}) {
+  const { width } = useWindowDimensions();
+  const [pending, setPending] = useState<(() => void) | null>(null);
+  const [anchor, setAnchor] = useState<{ top: number; left?: number; right?: number } | null>(null);
+
+  const open = (e: GestureResponderEvent) => {
     haptic.select();
-    trigger.current?.measureInWindow((x, y, _w, h) => setAnchor({ x, y: y + h + 6 }));
+    (e.currentTarget as unknown as View).measureInWindow((x, y, w, h) =>
+      setAnchor(props.align === "right" ? { top: y + h + 6, right: width - (x + w) } : { top: y + h + 6, left: x })
+    );
   };
-  const close = () => setAnchor(null);
+  const runPending = () => {
+    pending?.();
+    setPending(null);
+  };
+  const choose = (item: MenuItem) => {
+    haptic.select();
+    setAnchor(null);
+    if (Platform.OS === "ios") setPending(() => item.onPress);
+    else item.onPress();
+  };
 
   return (
     <>
-      <Pressable ref={trigger} onPress={open} hitSlop={8} style={s.trigger} accessibilityRole="button" accessibilityLabel={current}>
-        <Text style={s.triggerText}>{current}</Text>
-        <ChevronDown size={18} color={color.foreground} style={anchor && { transform: [{ rotate: "180deg" }] }} />
-      </Pressable>
-      <Modal visible={!!anchor} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
-        <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="ปิดตัวเลือก" />
+      {props.renderTrigger(open, !!anchor)}
+      <Modal visible={!!anchor} transparent animationType="fade" onRequestClose={() => setAnchor(null)} onDismiss={runPending} statusBarTranslucent>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => setAnchor(null)} accessibilityLabel="ปิดตัวเลือก" />
         {anchor && (
-          <View style={[s.menu, { top: anchor.y, left: anchor.x }]}>
-            {props.options.map((option, i) => {
-              const selected = option.key === props.value;
+          <View style={[s.menu, anchor]}>
+            {props.items.map((item, i) => {
+              const Icon = item.icon;
               return (
                 <Pressable
-                  key={option.key}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  onPress={() => {
-                    haptic.select();
-                    props.onChange(option.key);
-                    close();
-                  }}
+                  key={item.key}
+                  accessibilityRole={item.selected === undefined ? "button" : "radio"}
+                  accessibilityState={item.selected === undefined ? undefined : { selected: item.selected }}
+                  onPress={() => choose(item)}
                   style={({ pressed }) => [s.row, i > 0 && s.rowDivider, pressed && { backgroundColor: color.muted }]}
                 >
-                  <Text style={[s.rowText, selected && { color: color.primary, fontWeight: "600" }]}>{option.label}</Text>
-                  {selected && <Check size={18} color={color.primary} />}
+                  {Icon && <Icon size={20} color={color.foreground} />}
+                  <Text style={[s.rowText, item.selected && { color: color.primary, fontWeight: "600" }]}>{item.label}</Text>
+                  {item.selected && <Check size={18} color={color.primary} />}
                 </Pressable>
               );
             })}
@@ -49,6 +62,22 @@ export function Dropdown<K extends string>(props: { value: K; options: { key: K;
         )}
       </Modal>
     </>
+  );
+}
+
+// A text trigger ("ทั้งหมด ⌄") that picks one of its options.
+export function Dropdown<K extends string>(props: { value: K; options: { key: K; label: string }[]; onChange: (key: K) => void }) {
+  const current = props.options.find((o) => o.key === props.value)?.label ?? "";
+  return (
+    <Menu
+      items={props.options.map((o) => ({ key: o.key, label: o.label, selected: o.key === props.value, onPress: () => props.onChange(o.key) }))}
+      renderTrigger={(open, isOpen) => (
+        <Pressable onPress={open} hitSlop={8} style={s.trigger} accessibilityRole="button" accessibilityLabel={current}>
+          <Text style={s.triggerText}>{current}</Text>
+          <ChevronDown size={18} color={color.foreground} style={isOpen && { transform: [{ rotate: "180deg" }] }} />
+        </Pressable>
+      )}
+    />
   );
 }
 
@@ -68,7 +97,7 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, paddingHorizontal: 16, paddingVertical: 12 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.border },
-  rowText: { fontSize: 16 },
+  rowText: { flex: 1, fontSize: 16 },
 });

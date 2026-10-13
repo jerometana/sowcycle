@@ -2,12 +2,12 @@ import { useQuery } from "@powersync/react-native";
 import { breedingStage, countsTowardLitterStats, pregnancyCheckDates, type BreedingStage } from "@sowcycle/core";
 import { differenceInCalendarDays } from "date-fns";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ColumnChart, type ChartPoint } from "../../../components/ColumnChart";
-import { Dropdown } from "../../../components/Dropdown";
-import { Drawer, useConfirm } from "../../../components/Drawer";
-import { Button, Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../../components/ui";
+import { Dropdown, Menu } from "../../../components/Dropdown";
+import { useConfirm } from "../../../components/Drawer";
+import { Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../../components/ui";
 import { deleteTreatment, saveErrorMessage } from "../../../db/mutations";
 import { useOnline } from "../../../db/useOnline";
 import { thaiDateLong, thaiMonthYear } from "../../../lib/date";
@@ -91,8 +91,6 @@ export default function SowDetail() {
   const online = useOnline();
   const [tab, setTab] = useState<Tab>("details");
   const [filter, setFilter] = useState<HistoryFilter>("all");
-  const [addOpen, setAddOpen] = useState(false);
-  const pendingAdd = useRef<(() => void) | null>(null);
   const { data: sows } = useQuery<SowRow>("select name, breasts_count, birth_date, add_date from sows where id = ?", [id]);
   const { data: breedings } = useQuery<BreedingRow>(BREEDINGS, [id]);
   const { data: treatments } = useQuery<TreatmentRow>(TREATMENTS, [id]);
@@ -106,7 +104,7 @@ export default function SowDetail() {
     ...(filter !== "breedings" ? treatments.map((t) => ({ kind: "treatment" as const, date: t.used_at, t })) : []),
   ].sort((a, b) => b.date.localeCompare(a.date));
 
-  // The ways to add to this sow's history, offered by the header's add drawer.
+  // The ways to add to this sow's history, offered by the header's + menu.
   const addActions = [
     openPregnancy
       ? {
@@ -123,48 +121,20 @@ export default function SowDetail() {
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={screen.root} contentContainerStyle={screen.content}>
       <Stack.Screen
         options={{
-          title: sow?.name ?? "",
+          title: "",
           headerRight: () => (
-            <PressableScale
-              hitSlop={8}
-              accessibilityLabel="เพิ่มประวัติ"
-              onPress={() => {
-                haptic.tap();
-                setAddOpen(true);
-              }}
-              style={s.headerIcon}
-            >
-              <Plus size={24} color={color.primary} />
-            </PressableScale>
+            <Menu
+              align="right"
+              items={addActions.map((a) => ({ key: a.title, label: a.title, icon: a.icon, onPress: a.go }))}
+              renderTrigger={(open) => (
+                <PressableScale hitSlop={8} accessibilityLabel="เพิ่มประวัติ" disabled={!online} onPress={open} style={s.headerIcon}>
+                  <Plus size={24} color={online ? color.primary : color.mutedForeground} />
+                </PressableScale>
+              )}
+            />
           ),
         }}
       />
-      <Drawer
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onClosed={() => {
-          pendingAdd.current?.();
-          pendingAdd.current = null;
-        }}
-        title="เพิ่มประวัติ"
-      >
-        <View style={{ gap: 8 }}>
-          {addActions.map((a) => (
-            <Button
-              key={a.title}
-              title={a.title}
-              icon={a.icon}
-              variant={a.primary ? "primary" : "secondary"}
-              disabled={!online}
-              onPress={() => {
-                pendingAdd.current = a.go;
-                setAddOpen(false);
-              }}
-            />
-          ))}
-          {!online && <Text style={s.offline}>ต้องมีสัญญาณเพื่อบันทึก</Text>}
-        </View>
-      </Drawer>
       <Segmented
         value={tab}
         onChange={setTab}
