@@ -7,6 +7,7 @@ import { Card, CardHeader, EmptyText, InfoRow, screen, SearchBar, Segmented } fr
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Activity, Syringe } from "../../theme/icons";
+import { FadeIn } from "../../components/motion";
 
 type MedicineRow = { id: string; title: string; description: string | null; stock_count: number | null; uses: number };
 type UsageRow = { id: string; sow_id: string; sow_name: string; medicine: string | null; used_at: string; symptoms: string | null };
@@ -55,19 +56,21 @@ export default function Medicines() {
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={header}
           ListEmptyComponent={<EmptyText>ยังไม่มียาหรือวัคซีน</EmptyText>}
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const stock = item.stock_count ?? 0;
             return (
-              <Card onPress={() => router.push({ pathname: "/medicines/[id]", params: { id: item.id } })}>
-                <CardHeader
-                  title={item.title}
-                  subtitle={!!item.description && <Text style={s.muted}>{item.description}</Text>}
-                />
-                <View style={s.row}>
-                  <Text style={[s.stock, stock <= 0 && { color: color.destructive }]}>{stock > 0 ? `มีอยู่ ${stock}` : "หมด"}</Text>
-                  <Text style={s.muted}>{item.uses > 0 ? `ใช้ไป ${item.uses} ครั้ง` : "ยังไม่เคยใช้"}</Text>
-                </View>
-              </Card>
+              <FadeIn index={index}>
+                <Card onPress={() => router.push({ pathname: "/medicines/[id]", params: { id: item.id } })}>
+                  <CardHeader
+                    title={item.title}
+                    subtitle={!!item.description && <Text style={s.muted}>{item.description}</Text>}
+                  />
+                  <View style={s.row}>
+                    <Text style={[s.stock, stock <= 0 && { color: color.destructive }]}>{stock > 0 ? `มีอยู่ ${stock}` : "หมด"}</Text>
+                    <Text style={s.muted}>{item.uses > 0 ? `ใช้ไป ${item.uses} ครั้ง` : "ยังไม่เคยใช้"}</Text>
+                  </View>
+                </Card>
+              </FadeIn>
             );
           }}
         />
@@ -80,11 +83,13 @@ export default function Medicines() {
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={header}
           ListEmptyComponent={<EmptyText>ยังไม่มีประวัติการใช้ยา</EmptyText>}
-          renderItem={({ item }) => (
-            <Card onPress={() => router.push({ pathname: "/sows/[id]", params: { id: item.sow_id } })}>
-              <CardHeader title={item.medicine ?? "ไม่ระบุยา"} subtitle={<Text style={s.muted}>{`${item.sow_name} · ${thaiDateLong(item.used_at, true)}`}</Text>} />
-              {item.symptoms ? <InfoRow icon={Activity} label="อาการ">{item.symptoms}</InfoRow> : <InfoRow icon={Syringe} label="อาการ">-</InfoRow>}
-            </Card>
+          renderItem={({ item, index }) => (
+            <FadeIn index={index}>
+              <Card onPress={() => router.push({ pathname: "/sows/[id]", params: { id: item.sow_id } })}>
+                <CardHeader title={item.medicine ?? "ไม่ระบุยา"} subtitle={<Text style={s.muted}>{`${item.sow_name} · ${thaiDateLong(item.used_at, true)}`}</Text>} />
+                {item.symptoms ? <InfoRow icon={Activity} label="อาการ">{item.symptoms}</InfoRow> : <InfoRow icon={Syringe} label="อาการ">-</InfoRow>}
+              </Card>
+            </FadeIn>
           )}
         />
       )}

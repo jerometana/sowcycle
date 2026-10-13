@@ -1,5 +1,5 @@
-import { View } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { FadeIn } from "./motion";
 
 // A wash under a 2px line, like the web dashboard's small area charts.
 export function Sparkline(props: { values: number[]; stroke: string; fill: string; width?: number; height?: number }) {
@@ -17,11 +17,11 @@ export function Sparkline(props: { values: number[]; stroke: string; fill: strin
   const line = points.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
   const area = `${line} L${width},${height} L0,${height} Z`;
   return (
-    <View style={{ width, height }}>
+    <FadeIn style={{ width, height }}>
       <Svg width={width} height={height}>
         <Path d={area} fill={props.fill} />
         <Path d={line} stroke={props.stroke} strokeWidth={2} fill="none" strokeLinejoin="round" strokeLinecap="round" />
       </Svg>
-    </View>
+    </FadeIn>
   );
 }

@@ -1,15 +1,17 @@
 import type { LucideIcon } from "lucide-react-native";
-import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import * as Haptics from "expo-haptics";
+import { useEffect, useState, type ReactNode } from "react";
+import { ActivityIndicator, Animated, Pressable, StyleSheet, useAnimatedValue, View, type StyleProp, type ViewStyle } from "react-native";
 import { ChevronRight, Dna, Search } from "../theme/icons";
 import { color, Text, TextInput } from "../theme";
+import { PressableScale } from "./motion";
 
 export function Card(props: { children: ReactNode; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
   if (!props.onPress) return <View style={[s.card, props.style]}>{props.children}</View>;
   return (
-    <Pressable onPress={props.onPress} style={({ pressed }) => [s.card, props.style, pressed && { opacity: 0.85 }]}>
+    <PressableScale onPress={props.onPress} style={({ pressed }) => [s.card, props.style, pressed && { opacity: 0.85 }]}>
       {props.children}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -73,7 +75,7 @@ export function Button(props: {
   const fg = variant === "primary" ? color.primaryForeground : variant === "destructive" ? color.destructive : color.foreground;
   const Icon = props.icon;
   return (
-    <Pressable
+    <PressableScale
       onPress={props.onPress}
       disabled={props.disabled || props.busy}
       style={({ pressed }) => [
@@ -91,7 +93,7 @@ export function Button(props: {
           <Text style={[s.buttonText, { color: fg }]}>{props.title}</Text>
         </>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -112,13 +114,35 @@ export function SearchBar(props: { value: string; onChange: (v: string) => void;
 }
 
 export function Segmented<T extends string>(props: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  const [width, setWidth] = useState(0);
+  const active = props.options.findIndex((o) => o.value === props.value);
+  const slot = width / props.options.length;
+  const x = useAnimatedValue(active);
+
+  useEffect(() => {
+    Animated.spring(x, { toValue: active, useNativeDriver: true, speed: 20, bounciness: 4 }).start();
+  }, [x, active]);
+
   return (
-    <View style={s.segment}>
+    <View style={s.segment} onLayout={(e) => setWidth(e.nativeEvent.layout.width - SEGMENT_PAD * 2)}>
+      {width > 0 && (
+        <Animated.View
+          style={[s.segThumb, { width: slot, transform: [{ translateX: Animated.multiply(x, slot) }] }]}
+        />
+      )}
       {props.options.map((o) => {
-        const active = o.value === props.value;
+        const selected = o.value === props.value;
         return (
-          <Pressable key={o.value} onPress={() => props.onChange(o.value)} style={[s.segItem, active && s.segActive]}>
-            <Text style={[s.segText, active && s.segTextActive]}>{o.label}</Text>
+          <Pressable
+            key={o.value}
+            onPress={() => {
+              if (selected) return;
+              Haptics.selectionAsync();
+              props.onChange(o.value);
+            }}
+            style={s.segItem}
+          >
+            <Text style={[s.segText, selected && s.segTextActive]}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -133,6 +157,8 @@ export function SectionTitle(props: { children: ReactNode }) {
 export function EmptyText(props: { children: ReactNode }) {
   return <Text style={s.empty}>{props.children}</Text>;
 }
+
+const SEGMENT_PAD = 4;
 
 export const screen = StyleSheet.create({
   root: { backgroundColor: color.background, flex: 1 },
@@ -157,9 +183,9 @@ const s = StyleSheet.create({
   buttonText: { fontSize: 16, fontWeight: "500" },
   search: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: color.card, borderRadius: 999, paddingHorizontal: 16, height: 48, borderWidth: 1, borderColor: color.border },
   searchInput: { flex: 1, fontSize: 16 },
-  segment: { flexDirection: "row", backgroundColor: "#e5e5e5", borderRadius: 999, padding: 4 },
+  segment: { flexDirection: "row", backgroundColor: "#e5e5e5", borderRadius: 999, padding: SEGMENT_PAD },
+  segThumb: { position: "absolute", top: SEGMENT_PAD, bottom: SEGMENT_PAD, left: SEGMENT_PAD, borderRadius: 999, backgroundColor: color.card },
   segItem: { flex: 1, paddingVertical: 8, borderRadius: 999, alignItems: "center" },
-  segActive: { backgroundColor: color.card },
   segText: { color: color.mutedForeground, fontSize: 15, fontWeight: "500" },
   segTextActive: { color: color.foreground, fontWeight: "600" },
   sectionTitle: { fontSize: 20, fontWeight: "600", marginTop: 12 },

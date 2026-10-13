@@ -8,6 +8,7 @@ import { Button, Card, CardHeader, EmptyText, InfoRow, screen, SearchBar, Segmen
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Cake, Calendar, Check, PiggyBank, Plus } from "../../theme/icons";
+import { FadeIn } from "../../components/motion";
 
 type LitterRow = {
   id: string;
@@ -60,7 +61,11 @@ export default function Litters() {
         </View>
       }
       ListEmptyComponent={<EmptyText>ไม่มีครอก</EmptyText>}
-      renderItem={({ item }) => <LitterCard litter={item} />}
+      renderItem={({ item, index }) => (
+        <FadeIn index={index}>
+          <LitterCard litter={item} />
+        </FadeIn>
+      )}
     />
   );
 }
