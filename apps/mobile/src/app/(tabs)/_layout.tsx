@@ -49,8 +49,8 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontFamily: fonts["400"], fontSize: 12 },
         headerStyle: { backgroundColor: color.background },
         headerShadowVisible: false,
-        headerTitleAlign: "center",
-        headerTitleStyle: { fontFamily: fonts["600"], fontSize: 18, color: color.foreground },
+        headerTitleAlign: "left",
+        headerTitleStyle: { fontFamily: fonts["700"], fontSize: 26, color: color.foreground },
         headerRight: AccountButton,
       }}
     >
@@ -58,7 +58,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="sows" options={{ title: "แม่พันธุ์", tabBarIcon: tabIcon(PiggyBank) }} />
       <Tabs.Screen name="medicines" options={{ title: "ยาและวัคซีน", tabBarLabel: "ยา", tabBarIcon: tabIcon(Syringe) }} />
       <Tabs.Screen name="litters" options={{ title: "ครอกลูกหมู", tabBarLabel: "ครอก", tabBarIcon: tabIcon(Fence) }} />
-      <Tabs.Screen name="calendar" options={{ title: "Calendar", tabBarIcon: tabIcon(Calendar) }} />
+      <Tabs.Screen name="calendar" options={{ title: "กำหนดการ", tabBarIcon: tabIcon(Calendar) }} />
     </Tabs>
   );
 }

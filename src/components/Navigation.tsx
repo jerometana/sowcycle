@@ -46,7 +46,7 @@ const navItems = [
   // },
   {
     href: "/calendar",
-    label: "Calendar",
+    label: "กำหนดการ",
     icon: Calendar,
   },
 ];
