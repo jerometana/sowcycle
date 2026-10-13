@@ -1,9 +1,11 @@
 import { useStatus } from "@powersync/react-native";
 import { FlatList, View } from "react-native";
+import { FAB_CLEARANCE } from "../../components/Fab";
 import { SowCard } from "../../components/SowCard";
 import { EmptyText, screen } from "../../components/ui";
 import { useSowCards } from "../../db/sowCards";
-import { Text } from "../../theme";
+import { color, Text } from "../../theme";
+import { SummaryCards } from "../../components/SummaryCards";
 import { FadeIn } from "../../components/motion";
 import { matchesQuery, useHeaderTools } from "../../components/HeaderActions";
 import { router } from "expo-router";
@@ -20,11 +22,17 @@ const SOW_FILTERS = {
 } as const;
 type SowFilter = keyof typeof SOW_FILTERS;
 
+// Shortcut cards over the list. ทั้งหมด counts the sows still on the farm, the default ยังอยู่ view.
+const SUMMARY: { key: SowFilter; label: string; tint: string }[] = [
+  { key: "active", label: "ทั้งหมด", tint: color.foreground },
+  { key: "pregnant", label: "ตั้งครรภ์", tint: color.primary },
+];
+
 export default function SowList() {
   const status = useStatus();
   const { sows, isLoading } = useSowCards();
   const [filter, setFilter] = useState<SowFilter>("active");
-  const { query, searchBar, drawers } = useHeaderTools({
+  const { query, searchBar, overlays } = useHeaderTools({
     add: { label: "เพิ่มแม่พันธุ์", onPress: () => router.push({ pathname: "/sows/[id]/edit", params: { id: "new" } }) },
     filters: [
       {
@@ -42,17 +50,22 @@ export default function SowList() {
 
   return (
     <View style={{ flex: 1 }}>
-      {drawers}
       <FlatList
       contentInsetAdjustmentBehavior="automatic"
       style={screen.root}
-      contentContainerStyle={screen.content}
+      contentContainerStyle={[screen.content, { paddingBottom: FAB_CLEARANCE }]}
       data={shown}
       keyExtractor={(sow) => sow.id}
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
         <View style={{ gap: 12 }}>
           {searchBar}
+          <SummaryCards
+            unit="ตัว"
+            selected={filter}
+            onSelect={(key) => setFilter(key as SowFilter)}
+            cards={SUMMARY.map((card) => ({ ...card, count: sows.filter(SOW_FILTERS[card.key].test).length }))}
+          />
           {!status.connected && (
             <Text style={{ backgroundColor: "#fef3c7", color: "#92400e", padding: 12, borderRadius: 12, textAlign: "center" }}>
               ออฟไลน์ ข้อมูลจะซิงก์เมื่อมีสัญญาณ
@@ -69,6 +82,8 @@ export default function SowList() {
         </FadeIn>
       )}
       />
+      {overlays}
     </View>
   );
 }
+
