@@ -1,16 +1,16 @@
 import { useStatus } from "@powersync/react-native";
-import { useState } from "react";
 import { FlatList, View } from "react-native";
 import { SowCard } from "../../components/SowCard";
-import { EmptyText, SearchBar, screen } from "../../components/ui";
+import { EmptyText, screen } from "../../components/ui";
 import { useSowCards } from "../../db/sowCards";
 import { Text } from "../../theme";
 import { FadeIn } from "../../components/motion";
+import { useHeaderSearch } from "../../components/HeaderActions";
 
 export default function SowList() {
   const status = useStatus();
   const { sows, isLoading } = useSowCards();
-  const [query, setQuery] = useState("");
+  const { query, field } = useHeaderSearch("ค้นหาด้วยชื่อแม่พันธุ์");
   const shown = sows.filter((s) => s.name.toLowerCase().includes(query.trim().toLowerCase()));
 
   return (
@@ -28,7 +28,7 @@ export default function SowList() {
               ออฟไลน์ ข้อมูลจะซิงก์เมื่อมีสัญญาณ
             </Text>
           )}
-          <SearchBar value={query} onChange={setQuery} placeholder="ค้นหาด้วยชื่อแม่พันธุ์" />
+          {field}
         </View>
       }
       ListEmptyComponent={

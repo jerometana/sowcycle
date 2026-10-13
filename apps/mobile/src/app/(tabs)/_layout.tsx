@@ -1,32 +1,11 @@
 import { Tabs } from "expo-router";
 import type { LucideIcon } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Animated, useAnimatedValue, type ColorValue } from "react-native";
-import { AccountDrawer } from "../../components/AccountDrawer";
-import { PressableScale } from "../../components/motion";
+import { HeaderActions } from "../../components/HeaderActions";
 import { color, fonts } from "../../theme";
-import { Calendar, Fence, House, PiggyBank, Syringe, User } from "../../theme/icons";
+import { Calendar, Fence, House, PiggyBank, Syringe } from "../../theme/icons";
 import { haptic } from "../../lib/haptics";
-
-function AccountButton() {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <PressableScale
-        hitSlop={8}
-        accessibilityLabel="บัญชี"
-        onPress={() => {
-          haptic.tap();
-          setOpen(true);
-        }}
-        style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e5e5", alignItems: "center", justifyContent: "center", marginRight: 16 }}
-      >
-        <User size={20} color={color.gray600} />
-      </PressableScale>
-      <AccountDrawer open={open} onClose={() => setOpen(false)} />
-    </>
-  );
-}
 
 function TabIcon(props: { icon: LucideIcon; color: ColorValue; focused: boolean }) {
   const scale = useAnimatedValue(1);
@@ -63,7 +42,7 @@ export default function TabsLayout() {
         headerShadowVisible: false,
         headerTitleAlign: "left",
         headerTitleStyle: { fontFamily: fonts["700"], fontSize: 26, color: color.foreground },
-        headerRight: AccountButton,
+        headerRight: () => <HeaderActions />,
       }}
     >
       <Tabs.Screen name="index" options={{ title: "หน้าหลัก", tabBarIcon: tabIcon(House) }} />

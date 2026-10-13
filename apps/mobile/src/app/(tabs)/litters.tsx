@@ -4,11 +4,12 @@ import { differenceInCalendarDays } from "date-fns";
 import { router } from "expo-router";
 import { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
-import { Button, Card, CardHeader, EmptyText, InfoRow, screen, SearchBar, Segmented } from "../../components/ui";
+import { Button, Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../components/ui";
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Cake, Calendar, Check, PiggyBank, Plus } from "../../theme/icons";
 import { FadeIn } from "../../components/motion";
+import { useHeaderSearch } from "../../components/HeaderActions";
 
 type LitterRow = {
   id: string;
@@ -32,7 +33,7 @@ type Filter = "unsold" | "sold";
 
 export default function Litters() {
   const [filter, setFilter] = useState<Filter>("unsold");
-  const [query, setQuery] = useState("");
+  const { query, field } = useHeaderSearch("ค้นหาด้วยชื่อแม่พันธุ์");
   const { data } = useQuery<LitterRow>(LITTERS);
   const q = query.trim().toLowerCase();
   const litters = data
@@ -49,7 +50,7 @@ export default function Litters() {
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
         <View style={{ gap: 12 }}>
-          <SearchBar value={query} onChange={setQuery} placeholder="ค้นหาด้วยชื่อแม่พันธุ์" />
+          {field}
           <Segmented
             value={filter}
             onChange={setFilter}

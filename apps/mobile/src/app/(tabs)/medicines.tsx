@@ -3,11 +3,12 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { Fab } from "../../components/Fab";
-import { Card, CardHeader, EmptyText, InfoRow, screen, SearchBar, Segmented } from "../../components/ui";
+import { Card, CardHeader, EmptyText, InfoRow, screen, Segmented } from "../../components/ui";
 import { thaiDateLong } from "../../lib/date";
 import { color, Text } from "../../theme";
 import { Activity, Syringe } from "../../theme/icons";
 import { FadeIn } from "../../components/motion";
+import { useHeaderSearch } from "../../components/HeaderActions";
 
 type MedicineRow = { id: string; title: string; description: string | null; stock_count: number | null; uses: number };
 type UsageRow = { id: string; sow_id: string; sow_name: string; medicine: string | null; used_at: string; symptoms: string | null };
@@ -26,7 +27,7 @@ type Tab = "stock" | "usage";
 
 export default function Medicines() {
   const [tab, setTab] = useState<Tab>("stock");
-  const [query, setQuery] = useState("");
+  const { query, field } = useHeaderSearch(tab === "stock" ? "ค้นหาด้วยชื่อยาหรือวัคซีน" : "ค้นหาด้วยชื่อแม่พันธุ์หรือยา");
   const { data: medicines } = useQuery<MedicineRow>(MEDICINES);
   const { data: usage } = useQuery<UsageRow>(USAGE);
   const q = query.trim().toLowerCase();
@@ -41,7 +42,7 @@ export default function Medicines() {
           { value: "usage", label: "ประวัติใช้ยา" },
         ]}
       />
-      <SearchBar value={query} onChange={setQuery} placeholder={tab === "stock" ? "ค้นหาด้วยชื่อยาหรือวัคซีน" : "ค้นหาด้วยชื่อแม่พันธุ์หรือยา"} />
+      {field}
     </View>
   );
 
